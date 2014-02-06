@@ -20,14 +20,6 @@ export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 # Simple Alias to ensure color is not always set to on, causing issues with less
 alias grep="grep --color=auto ";
 
-#
-# Make some saftey aliases
-# ------------------------
-
-alias init='echo "Init Command Disallowed by ESP"'
-alias reboot='echo "Reboot Command Disallowed by ESP"'
-alias shutdown='echo "Shutdown Command Disallowed by ESP"'
-# More to come #
 
 #
 # PS1 Checks 
@@ -149,7 +141,7 @@ function display_info(){
 # Backups 
 # -------
 
-alias last-cpbackup="less `ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/| head -n 1`";
+alias last-cpbackup="less \`ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/| head -n 1\`";
 alias bktxt='date +.Backup.%F.%T';
 alias backup-report="curl -s --insecure https://raw.github.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
 function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vi $@;};
@@ -390,5 +382,3 @@ export PS1="\n`PS1_Alerts`\n\[\033[0;33m\][\!]\`if [[ \$? = "0" ]]; then echo "\
 # -----------------------------------------------
 save_connected;
 echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
-
-# Script Complete
