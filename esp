@@ -20,6 +20,14 @@ export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 # Simple Alias to ensure color is not always set to on, causing issues with less
 alias grep="grep --color=auto ";
 
+#
+# Make some saftey aliases
+# ------------------------
+
+alias init='echo "Init Command Disallowed by ESP"'
+alias reboot='echo "Reboot Command Disallowed by ESP'"
+alias shutdown='echo "Shutdown Command Disallowed by ESP"'
+# More to come #
 
 #
 # PS1 Checks 
