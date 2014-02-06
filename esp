@@ -25,7 +25,7 @@ alias grep="grep --color=auto ";
 # ------------------------
 
 alias init='echo "Init Command Disallowed by ESP"'
-alias reboot='echo "Reboot Command Disallowed by ESP'"
+alias reboot='echo "Reboot Command Disallowed by ESP"'
 alias shutdown='echo "Shutdown Command Disallowed by ESP"'
 # More to come #
 
@@ -366,33 +366,6 @@ export PS1_IP=`lsip-real`;
 # --------------------------------------
 
 function PS1_Alerts() {
-    echo;
-    echo -en "[";
-    echo -n $HOSTNAME;
-    echo -n " | ";
-    echo -n $PS1_IP;
-    echo -ne "] \e[1;36m";
-    alerts=`check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
-    if [ -n "$alerts" ]; then
-	echo -ne "Alerts: ";
-	echo -ne "$alerts";
-    fi
-}
-
-
-#
-# Set the PS1 Vars
-# ----------------
-# export PROMPT_COMMAND=PS1
-export PS1="`PS1_Alerts`\n\[\033[0;33m\][\!]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
-
-#
-# Save the current ssh sessions for the ssh check
-# -----------------------------------------------
-save_connected;
-echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
-
-# Script Complete() {
     echo;
     echo -en "[";
     echo -n $HOSTNAME;
