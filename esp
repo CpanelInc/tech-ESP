@@ -1,0 +1,396 @@
+#!/bin/bash
+
+# ESP - Enhanced Shell Prompt
+
+#
+# Initial Setup
+# -------------
+#
+
+# DL_SCRIPTS is the directory where downloaded scripts will be stored
+export DL_SCRIPTS="/root/cpanel_techs/scripts/";
+
+# Set an sane editor, vi works on all centos servers
+export EDITOR="vi";
+export VISUAL="vi"; 
+
+# Include cPanel paths in $PATH
+export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
+
+# Simple Alias to ensure color is not always set to on, causing issues with less
+alias grep="grep --color=auto ";
+
+
+#
+# PS1 Checks 
+# ----------
+#
+# These functions below will be used in the Alerts line in the PS1 
+#
+
+
+# This function will check for upcp in the process list,
+#  displaying an alert if found.
+function check_upcp () {
+    ps auxf | grep 'cPanel Update\|upcp'|grep -v grep > /dev/null;
+    if [ $? -eq 0 ]; then
+        display_info "upcp";
+    fi;
+}; 
+
+
+# Check to see if backups are found in the process list
+function check_backups () {
+    # TODO : Rewrite above check to add new backup system
+    ps auxf|grep cpbackup|grep -v grep > /dev/null;
+    if [ $? -eq 0 ]; then
+        display_warn "Legacy Backup";
+    fi;
+}; 
+
+# Check to see if easyapache is found in the process list
+function check_easyapache () {
+    ps auxf | grep easyapache | grep -v grep > /dev/null;
+    if [ $? -eq 0 ]; then
+        display_warn "easyapache";
+    fi;
+};
+
+# This check will verify if apache is up and the server status page is found
+function check_apache() {
+    curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
+    if [ $? -ne 0 ]; then
+        display_critical "Apache is DOWN";
+    fi;
+}
+
+# This check will verify if exim is in the processlist 
+function check_exim(){
+    ps aux | grep -v grep | grep '/usr/sbin/exim' > /dev/null;
+    if [ $? -eq 1 ]; then
+        display_critical "Exim is DOWN";
+    fi;
+}
+
+# This function uses an mysql ping to check for root mysql connectivity.
+# If mysql is up, however if root can not connect to mysql it will fail
+
+function check_mysql() {
+    mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
+    if [ $? -ne 0 ]; then
+        display_critical "MySQL is DOWN";
+    fi;
+}
+
+#TODO:  Create checks for courier/dovecot
+
+
+#
+# SSH Connection Functions
+# ------------------------
+#
+# These functions will save and verify if new connections to the server via ssh are made.
+# It stores the active tty/pts sessions and will alert the user if the change.
+#
+
+# Function to return the current active tty/pts sessions
+function current_connected() {
+    echo `w | awk '{print $2}'| tail -n +3| sort`;
+};
+
+# Function to check for new connections and display warning if new connections are found.
+function new_connected() {
+    if [ "`current_connected`" != "$connected_users" ];then
+        echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss ";
+    fi;
+};
+
+# Function to save the current users an dismiss the SSH warning
+function save_connected(){
+    export connected_users=`current_connected`;
+};
+
+
+#
+# Display Alert Levels
+# --------------------
+
+function display_critical(){
+    echo -ne "$(tput setaf 1)$(tput bold)$1$(tput sgr0) "
+};
+
+function display_warn(){
+    echo -ne "$(tput setaf 3)$1$(tput sgr0) "
+};
+function display_info(){
+    echo -ne "$(tput setaf 6)$1$(tput sgr0) "
+};
+
+
+#
+# Command Aliases and help functions
+# ----------------------------------
+#
+#
+# Below are the extra commands and help functions for the script
+# Each help and alias section is limited to one Category 
+#
+
+
+#
+# Backups 
+# -------
+
+alias last-cpbackup="less `ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/| head -n 1`";
+alias bktxt='date +.Backup.%F.%T';
+alias backup-report="curl -s --insecure https://raw.github.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
+function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vi $@;};
+function cl() { cd $@ && ls;};
+function bkc() { cp -v $@ $@`bktxt`;};
+function bkm() { mv -v $@ $@`bktxt`;};
+
+cphelp_backups(){
+    help_section "Backups"
+        help_command "bke filename" "Automatically creates a new backup of a file and opens the orignal";
+        help_command "bkc filename" "Makes a backup copy of a file with the standard backup text";
+        help_command "bkm filename" "Moves the file aside, renaming it with the standard backup text";
+        help_command "bktext" "Outputs the standard backup text featuring a timestamp";
+        help_command "backup-report" "Returns a backup report";
+        help_command "last-cpbackup" "Opens the last cpbackup log upin less.";
+}
+
+#
+# System Information 
+# ------------------
+
+alias server-type="strings /var/cpanel/envtype";
+alias sys-snap-install="cd /root;wget wget http://cptechs.info/system-snapshot/sys-snap.sh;chmod +x sys-snap.sh;nohup sh sys-snap.sh &";
+alias sys-snap-start="cd /root;nohup sh sys-snap.sh &";
+alias cpu-count="grep proc /proc/cpuinfo |wc -l" ;
+alias cpu-info="grep model\ name /proc/cpuinfo | sed s/model\ name//g | uniq -c" ;
+
+cphelp_sys-info(){
+    help_section "System Information";
+        help_command "sys-snap-install" "Installs sys-snap";
+        help_command "sys-snap-start" "Starts sys-snap if already installed";
+        help_command "cpu-count" "Displays the number of cpus installed";
+        help_command "cpu-info" "Displays the number and type of cpus installed";
+        help_command "server-type" "Returns the server type from /v/c/envtype";
+}
+
+
+#
+# Network Information 
+# -------------------
+
+alias lsip='ifconfig | grep "inet addr"| grep -v "127.0.0.1"';
+alias lsip-real="curl -s http://cpanel.net/showip.cgi";
+alias lsip-mainip="strings /var/cpanel/mainip";
+
+function cphelp_net() {
+    help_section "Network Information";
+        help_command "lsip" "Displays all the ip addresses in ifconfig, without the thrills";
+        help_command "lsip-real" "Displays the external ip address of the server seen by the internet.";
+        help_command "lsip-mainip" "Displays cPanel's mainip from /v/c/mainip";
+}
+
+
+#
+# Account Information 
+# ------------------
+
+function accounting_cruft_probe(){
+    if [ -e $DL_SCRIPTS/accounting_cruft_probe ]
+        then
+            $DL_SCRIPTS/accounting_cruft_probe $@;
+    else
+        echo "$(tput setaf 3)Script not yet downloaded, downloading...$(tput sgr0)";
+        mkdir -p $DL_SCRIPTS;
+        wget -P $DL_SCRIPTS https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe  ;
+        chmod u+x $DL_SCRIPTS/accounting_cruft_probe ;
+         $DL_SCRIPTS/accounting_cruft_probe $@;
+    fi
+}
+
+function cphelp_account() {
+    help_section "Account Information";
+        help_command "accounting_cruft_probe" "Script to locate the remains of an account";
+}
+
+#
+# SSL
+# ---
+
+#TODO: Fix sslhunt to use $DL_Scripts 
+alias sslhunt-install='curl -O https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh > /root/sslhunter.sh; chmod u+x /root/sslhunter.sh; echo; echo "sslhunter.sh installed into /root/sshhunter.sh"; echo "USE: /root/sslhunter.sh new.cert -or- /root/sslhunter.sh new.cert /path/to/ssl/dir /other/search/path";'
+alias ssl-verify='openssl x509 -noout -text -in';
+
+function cphelp_ssl() {
+    help_section "SSL";
+        help_command "ssl-verify" "Alias for openssl x509 -noout -text -in used to test certs";
+        help_command "sslhunt-install" "Installs the sslhunter.sh script into /root ";
+}
+
+#
+# Exim & Mail
+# -----------
+alias exim-count="exim -bpc";
+alias exim-stats-size="du -h --max-depth=0 /var/lib/mysql/eximstats/" ;
+
+function cphelp_mail(){
+    help_section "Exim & Mail"; 
+        help_command "exim-count" "Displays the number of messages in the exim queue";
+        help_command "exim-stats-size" "Displays the size of the eximstats database";
+}
+
+#
+# MySQL
+# -----
+alias mysqltuner="/usr/local/cpanel/bin/mysqltuner.pl" ;
+alias mysqlerr="less /var/lib/mysql/`hostname`.err";
+
+function cphelp_mysql() {
+    help_section "MySQL & Databases";
+        help_command "mysqltuner" "Runs mysqltuner.";
+        help_command "mysqlerr" "Opens the mysql error log in less";
+}
+
+
+#
+# PHP & Apache
+# ---
+alias phpinfo="/usr/local/cpanel/bin/rebuild_phpconf --current";
+alias ea-info="curl -s https://raw.github.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
+
+function cphelp_PHP_Apache(){
+    help_section "PHP & Apache";
+        help_command "phpinfo" "Displays php handler information";
+        help_command "ea-info" "Runs a cpanel script to test ea information (ea-precheck.sh)";
+}
+
+#
+# Bash Navigation
+# ---------------
+
+alias cl-off="unalias cd";
+alias badcd="unalias cd";
+alias cl-on="alias cd=cl";
+alias up="cd ..";
+alias la="ls -lah";
+
+function cphelp_bash_nav (){
+    help_section "Bash Navigation";
+        help_command "cl directory" "Changes into a directory and outputs a ls";
+        help_command "cl-on" "Enables cl for the cd command";
+        help_command "cl-off" "clears the alias for cd=cl";
+        help_command "la" "Alias for 'ls -lah'";
+        help_command "up" "Jumps into the parent directory aka cd ..";
+        help_command "badcd" "Useful when the automatic cd&ls is messing up";
+}
+
+#
+# Other and Special Commands
+# --------------------------
+
+alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
+alias check_libkey="curl -s --insecure https://raw.github.com/cPMarco/cpm/master/determine_your_sys_status.sh | sh";
+alias perdir=awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON[\"PWD\"]\;l=split\(dir\,parts,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\",\"/\",d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\';
+
+function oddthings () {
+    echo  "$(tput bold)odd things$(tput sgr0)";
+    lsof -Pni |grep -vE ':80|:443|imap|pop3|named|cpdavd|courier|dovecot|exim|mysql|pure|pro|sshd|cpsrvd|spamd|ntpd';
+};
+
+function cphelp_other() {
+    help_section "Other and Special Commands";
+        help_command "save_connected" "saves out the current ssh logins and dismisses the ssh login alert";
+        help_command "cphelp" "This Help message";
+        help_command "oddthings" "Shows odd things that are running on odd ports";
+        help_command "check_libkey" "Runs automated libkey checks";
+        help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
+};
+
+
+#
+# Functions to assist with displaying the help section
+# ----------------------------------------------------
+
+function help_section () {
+    printf "\n\n$(tput setaf 3)$(tput bold) .: %s :. $(tput sgr0)\n" "$1";
+}
+
+function help_command () {
+    printf "$(tput setaf 2)$(tput bold)%16s $(tput sgr0)%s\n" "$1" "$2";
+}
+
+
+
+
+#
+# The Actual Help Section 
+#
+function cphelp() {
+    cphelp_backups;
+    cphelp_sys-info;
+    cphelp_net;
+    cphelp_account;
+    cphelp_ssl;
+    cphelp_mail;
+    cphelp_mysql;
+    cphelp_PHP_Apache;
+    cphelp_bash_nav;
+    cphelp_other;
+}
+
+
+
+#
+# Setup some envs for the PS1 prompt  
+# ----------------------------------
+
+export HOSTNAME=`hostname -f`;
+export PS1_IP=`lsip-real`;
+
+
+
+# 
+# Set the functions active in the Prompt
+# --------------------------------------
+
+function PS1_Alerts() {
+    echo -ne `check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
+}
+
+#
+# Set the PS1 Functions
+# ---------------------
+function Alerts() {
+    alerts=$(PS1_Alerts);
+    if [ -n "$alerts" ]; then
+	echo -ne "Alerts: ";
+	echo -ne "$alerts";
+    fi
+}
+
+function PS1() {
+    echo;
+    echo -en "[";
+    echo -n $HOSTNAME;
+    echo -n " | ";
+    echo -n $PS1_IP;
+    echo -ne "] \e[1;36m";
+    Alerts;
+}
+
+
+#
+# Set the PS1 Vars
+# ----------------
+# export PROMPT_COMMAND=PS1
+export PS1="`PS1`\n\[\033[0;33m\][\!]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
+
+#
+# Save the current ssh sessions for the ssh check
+# -----------------------------------------------
+save_connected;
+echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
