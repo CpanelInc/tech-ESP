@@ -324,8 +324,6 @@ function help_command () {
 }
 
 
-
-
 #
 # The Actual Help Section 
 #
@@ -341,9 +339,6 @@ function cphelp() {
     cphelp_bash_nav;
     cphelp_other;
 }
-
-
-
 #
 # Setup some envs for the PS1 prompt  
 # ----------------------------------
