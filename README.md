@@ -1,6 +1,5 @@
 ESP - Enhanced Shell Prompt
 ===========================
-~~ TEST PUSH ~~
 Into
 ----
 
