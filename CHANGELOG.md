@@ -6,6 +6,7 @@ Pending Commit
  * Implemented New configuration option system
  * Configuration option to call SSP automaticaly, however SSP is still disabled by default
  * Replaced history line number with the ticket number
+ * Added checks to test if the mailserver process is dead
 
 Feb 9, 2014
 -----------
