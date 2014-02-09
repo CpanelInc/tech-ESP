@@ -246,12 +246,10 @@ function cphelp_mail(){
 #
 # MySQL
 # -----
-alias mysqltuner="/usr/local/cpanel/bin/mysqltuner.pl" ;
 alias mysqlerr="less /var/lib/mysql/`hostname`.err";
 
 function cphelp_mysql() {
     help_section "MySQL & Databases";
-        help_command "mysqltuner" "Runs mysqltuner.";
         help_command "mysqlerr" "Opens the mysql error log in less";
 }
 
