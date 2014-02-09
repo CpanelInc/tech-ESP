@@ -90,8 +90,11 @@ function check_mysql() {
     fi;
 }
 
-#TODO:  Create checks for courier/dovecot
-
+function check_mailserver() {
+    if [ `ps aux | grep 'dovecot\|courier'| grep -v grep  | wc -l` -lt 1 ]; then
+        display_critical "Mailserver is Down";
+    fi
+}
 
 #
 # SSH Connection Functions
@@ -363,7 +366,7 @@ export PS1_IP=`lsip-real`;
 export IP_ADDR=`lsip-real`;
 
 function PS1_Alerts() {
-	echo -ne `check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
+	echo -ne `check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
 }
 
 export PS1="\n\033[1;30m\][\H | $IP_ADDR] \e[0;36mAlerts: \`PS1_Alerts\`\n\[\033[0;33m\][$TICKET]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
