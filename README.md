@@ -15,6 +15,22 @@ To use esp run the following command on Centos 5 or 6:
 
 Special Thanks to Jerald Jonson for initially coding and hacking out the centos 5 bugs in the above source command that makes this tool possible, and his contributions to the ESP script itself.
 
+Configuration Options
+---------------------
+
+Configuration options in ESP are bash envirmentals declared before the source command.  This allows configuration options to be set while not using any configuration files, and are easy to declare.  For example if we wanted to declare that we wanted to run SSP, we could set 'ssp=1' before the source command as shown below:
+
+Example:
+    ssp=1 source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+
+### SSP 
+
+You can enable SSP to run on script execution my declaring an bash envermental called ssp before running the command for this script.  
+
+Configuration Option: ssp
+Options: '1' - Enable SSP, Default is disabled
+
+
 Common Questions
 ----------------
 
