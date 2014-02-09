@@ -21,6 +21,7 @@ Configuration Options
 Configuration options in ESP are bash envirmentals declared before the source command.  This allows configuration options to be set while not using any configuration files, and are easy to declare.  For example if we wanted to declare that we wanted to run SSP, we could set 'ssp=1' before the source command as shown below:
 
 Example:
+
     ssp=1 source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
 
 ### SSP 
