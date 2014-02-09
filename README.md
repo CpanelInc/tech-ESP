@@ -29,6 +29,7 @@ Example:
 You can enable SSP to run on script execution my declaring an bash envermental called ssp before running the command for this script.  
 
 Configuration Option: ssp
+
 Options: '1' - Enable SSP, Default is disabled
 
 
