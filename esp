@@ -2,6 +2,23 @@
 
 # ESP - Enhanced Shell Prompt
 
+
+#
+# Pre-flight check for cpanel
+#
+
+if [ -f /var/cpanel/cpanel ]; then
+    echo "$(tput setaf 3) .: WARNING WARNING WARNING :.";
+    echo "===============================";
+    echo "cPanel has not been detected.  This script has only been tested on cPanel"
+    echo "Please Ctrl-C out of this script in the next 10 seconds otherwise it will run"; 
+    for time in {10..0}; do
+         echo "Proceading in $time.";
+        sleep 1;
+    done;
+    echo "Foward March! $(tput sgr0)";
+fi
+
 #
 # Initial Setup
 # -------------
@@ -22,7 +39,7 @@ alias grep="grep --color=auto ";
 
 
 # Grab the Ticket number if it exists from the PS1 prompt 
-if [ `echo $PS1 | grep "cPs#"| wc -l` -eq 1 ]; then
+if [ `echo $PS1 | grep "cPs#"| wc -l` -ge 1 ]; then
     export TICKET=`echo $PS1 | awk '{{print $3}}'| cut -d \@ -f 2`;
 else
     export TICKET="n/a";
@@ -39,6 +56,7 @@ fi
 
 # This function will check for upcp in the process list,
 #  displaying an alert if found.
+
 function check_upcp () {
     ps auxf | grep 'cPanel Update\|upcp'|grep -v grep > /dev/null;
     if [ $? -eq 0 ]; then
@@ -48,8 +66,8 @@ function check_upcp () {
 
 
 # Check to see if backups are found in the process list
+
 function check_backups () {
-    # TODO : Rewrite above check to add new backup system
     ps auxf|grep cpbackup|grep -v grep > /dev/null;
     if [ $? -eq 0 ]; then
         display_warn "Legacy Backup";
@@ -370,7 +388,7 @@ function PS1_Alerts() {
 export PS1="\n\033[1;30m\][\H | $IP_ADDR] \e[0;36mAlerts: \`PS1_Alerts\`\n\[\033[0;33m\][$TICKET]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
 
 save_connected;
-if [ $ssp  -eq 1 ]; then
+if [ "$ssp" == "1" ]; then
     curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
 fi
 echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
