@@ -7,6 +7,7 @@ Pending Commit
  * Configuration option to call SSP automaticaly, however SSP is still disabled by default
  * Replaced history line number with the ticket number
  * Added checks to test if the mailserver process is dead
+ * Addded check to check for cPanel and display 10 sec warning if cPanel is not detected
 
 Feb 9, 2014
 -----------
