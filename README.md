@@ -51,6 +51,7 @@ Currently the script will check for the following in the PS1 Alerts:
 * If MySQL is down
 * If an new ssh connection/logout is detected
 * If the mailserver is down
+* If yum is running or has an stale lock
 
 ### What other features does ESP have ###
 
