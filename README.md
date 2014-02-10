@@ -50,6 +50,7 @@ Currently the script will check for the following in the PS1 Alerts:
 * If exim is down
 * If MySQL is down
 * If an new ssh connection/logout is detected
+* If the mailserver is down
 
 ### What other features does ESP have ###
 
