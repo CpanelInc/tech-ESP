@@ -25,11 +25,24 @@ fi
 #
 
 # DL_SCRIPTS is the directory where downloaded scripts will be stored
-export DL_SCRIPTS="/root/cpanel_techs/scripts/";
+export DL_SCRIPTS="/root/cptechs/scripts/";
 
-# Set an sane editor, vi works on all centos servers
-export EDITOR="vi";
-export VISUAL="vi"; 
+
+#
+# Editor detection
+# ----------------
+
+# This check is to set vim as the editor if avalable reverting back to 
+# vi if vim is not avalable. Also sets an alias for vim to vi if vim
+# is not avalable.    Related Issue [#22]
+if [ -f /usr/bin/vim ]; then 
+    export EDITOR="vim";
+    export VISUAL="vim";
+else
+    export EDITOR="vi";
+    export VISUAL="vi";
+    alias "vim"="vi";
+fi
 
 # Include cPanel paths in $PATH
 export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
