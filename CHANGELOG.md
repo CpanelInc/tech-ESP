@@ -9,6 +9,7 @@ Pending Commit
  * Added checks to test if the mailserver process is dead
  * Addded check to check for cPanel and display 10 sec warning if cPanel is not detected [#13]
  * Added check for vim and sets that as the editor,  if vim is non-existant, it falls back to vi and creates an alias for vim to vi. [#22] 
+ * Added a alert check for yum and also stale yum locks [#24]
 
 Feb 9, 2014
 -----------

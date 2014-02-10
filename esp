@@ -17,7 +17,7 @@ if [ -f /var/cpanel/cpanel ]; then
         sleep 1;
     done;
     echo "Foward March! $(tput sgr0)";
-fi
+fi;
 
 #
 # Initial Setup
@@ -42,12 +42,12 @@ else
     export EDITOR="vi";
     export VISUAL="vi";
     alias "vim"="vi";
-fi
+fi;
 
 # Include cPanel paths in $PATH
 export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 
-# Simple Alias to ensure color is not always set to on, causing issues with less
+# Simple Alias to ensure color is not always set to on, that can cause issues with less
 alias grep="grep --color=auto ";
 
 
@@ -56,7 +56,7 @@ if [ `echo $PS1 | grep "cPs#"| wc -l` -ge 1 ]; then
     export TICKET=`echo $PS1 | awk '{{print $3}}'| cut -d \@ -f 2`;
 else
     export TICKET="n/a";
-fi
+fi;
 
 
 #
@@ -76,6 +76,20 @@ function check_upcp () {
         display_info "upcp";
     fi;
 }; 
+
+
+# Check for yum Lock
+
+function check_yum () {
+    if [ -f /var/run/yum.pid ]; then
+        ps -eo pid | grep `cat /var/run/yum.pid`>/dev/null
+        if [ $? -eq 0 ]; then
+            display_warn "yum";
+        else
+            display_critical "Stale yum lock";
+        fi;
+    fi;
+};
 
 
 # Check to see if backups are found in the process list
@@ -143,7 +157,7 @@ function current_connected() {
 # Function to check for new connections and display warning if new connections are found.
 function new_connected() {
     if [ "`current_connected`" != "$connected_users" ];then
-        echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss ";
+        echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
     fi;
 };
 
@@ -158,14 +172,14 @@ function save_connected(){
 # --------------------
 
 function display_critical(){
-    echo -ne "$(tput setaf 1)$(tput bold)$1$(tput sgr0) "
+    echo -ne "$(tput setaf 1)$(tput bold)$1$(tput sgr0), "
 };
 
 function display_warn(){
-    echo -ne "$(tput setaf 3)$1$(tput sgr0) "
+    echo -ne "$(tput setaf 3)$1$(tput sgr0), "
 };
 function display_info(){
-    echo -ne "$(tput setaf 6)$1$(tput sgr0) "
+    echo -ne "$(tput setaf 6)$1$(tput sgr0), "
 };
 
 
@@ -395,7 +409,7 @@ export PS1_IP=`lsip-real`;
 export IP_ADDR=`lsip-real`;
 
 function PS1_Alerts() {
-	echo -ne `check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
+	echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
 }
 
 export PS1="\n\033[1;30m\][\H | $IP_ADDR] \e[0;36mAlerts: \`PS1_Alerts\`\n\[\033[0;33m\][$TICKET]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";

@@ -4,7 +4,7 @@ ESP - Enhanced Shell Prompt
 Intro
 ----
 
-ESP or Enhanced Shell Prompt is an bash prompt that contains various checks to help an tech know whats happening on the server.  Every time the PS1 prompt is rendered, checks for upcp, backups, easyapache, new SSH connections, and also service checks for apache, exim, mysql are run.  More checks will be introduced in future versions
+ESP or Enhanced Shell Prompt is an bash prompt that contains various checks to help an tech know whats happening on the server.  Every time the PS1 prompt is rendered, checks for upcp, backups, easyapache, new SSH connections, and also service checks for yum locks, apache, exim, mysql are run.  More checks will be introduced in future versions
 
 Usage
 -----
