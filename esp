@@ -277,14 +277,28 @@ function cphelp_account() {
 # SSL
 # ---
 
-#TODO: Fix sslhunt to use $DL_Scripts 
-alias sslhunt-install='curl -O https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh > /root/sslhunter.sh; chmod u+x /root/sslhunter.sh; echo; echo "sslhunter.sh installed into /root/sshhunter.sh"; echo "USE: /root/sslhunter.sh new.cert -or- /root/sslhunter.sh new.cert /path/to/ssl/dir /other/search/path";'
+
+function sslhunter(){
+    if [ -e $DL_SCRIPTS/sslhunter.sh ]
+        then
+            echo "USE: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
+            $DL_SCRIPTS/sslhunter.sh $@;
+    else
+        echo "$(tput setaf 3)Script not yet downloaded, downloading...$(tput sgr0)";
+        mkdir -p $DL_SCRIPTS;
+        wget -P $DL_SCRIPTS https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh;
+        chmod u+x $DL_SCRIPTS/sslhunter.sh;
+        echo "USE: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
+        $DL_SCRIPTS/sslhunter.sh $@;
+    fi
+}
+
 alias ssl-verify='openssl x509 -noout -text -in';
 
 function cphelp_ssl() {
     help_section "SSL";
         help_command "ssl-verify" "Alias for openssl x509 -noout -text -in used to test certs";
-        help_command "sslhunt-install" "Installs the sslhunter.sh script into /root ";
+        help_command "sslhunter" "Ussage: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
 }
 
 #

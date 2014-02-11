@@ -11,6 +11,7 @@ Pending Commit
  * Added check for vim and sets that as the editor,  if vim is non-existant, it falls back to vi and creates an alias for vim to vi. [#22] 
  * Added a alert check for yum and also stale yum locks [#24]
  * Removed Grey color from $PS1 as it messes up some termanals [#12]
+ * Updated sslhunter command to use the $DL_SCRIPTS var and be smarter when invoked. [#15]
 
 Feb 9, 2014
 -----------
