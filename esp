@@ -59,6 +59,30 @@ else
 fi;
 
 
+
+#
+# Script Downloader
+# ----------------
+
+
+function esp_script_dl(){
+    local SCRIPT="$1";
+    local URL="$2"
+    if [ -e $DL_SCRIPTS/$SCRIPT ]
+        then
+            $DL_SCRIPTS/$SCRIPT $@;
+    else
+        echo -ne "$(tput setaf 3)Script not yet downloaded, downloading...";
+        mkdir -p $DL_SCRIPTS;
+        wget --quiet -P $DL_SCRIPTS $URL;
+        chmod u+x $DL_SCRIPTS/$SCRIPT;
+        echo " Complete$(tput sgr0)";
+        $DL_SCRIPTS/$SCRIPT $@;
+    fi
+}
+
+
+
 #
 # PS1 Checks 
 # ----------
@@ -255,18 +279,7 @@ function cphelp_net() {
 # Account Information 
 # ------------------
 
-function accounting_cruft_probe(){
-    if [ -e $DL_SCRIPTS/accounting_cruft_probe ]
-        then
-            $DL_SCRIPTS/accounting_cruft_probe $@;
-    else
-        echo "$(tput setaf 3)Script not yet downloaded, downloading...$(tput sgr0)";
-        mkdir -p $DL_SCRIPTS;
-        wget -P $DL_SCRIPTS https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe  ;
-        chmod u+x $DL_SCRIPTS/accounting_cruft_probe ;
-         $DL_SCRIPTS/accounting_cruft_probe $@;
-    fi
-}
+alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
 
 function cphelp_account() {
     help_section "Account Information";
@@ -277,22 +290,7 @@ function cphelp_account() {
 # SSL
 # ---
 
-
-function sslhunter(){
-    if [ -e $DL_SCRIPTS/sslhunter.sh ]
-        then
-            echo "USE: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
-            $DL_SCRIPTS/sslhunter.sh $@;
-    else
-        echo "$(tput setaf 3)Script not yet downloaded, downloading...$(tput sgr0)";
-        mkdir -p $DL_SCRIPTS;
-        wget -P $DL_SCRIPTS https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh;
-        chmod u+x $DL_SCRIPTS/sslhunter.sh;
-        echo "USE: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
-        $DL_SCRIPTS/sslhunter.sh $@;
-    fi
-}
-
+alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
 alias ssl-verify='openssl x509 -noout -text -in';
 
 function cphelp_ssl() {
@@ -356,13 +354,15 @@ function cphelp_bash_nav (){
         help_command "badcd" "Useful when the automatic cd&ls is messing up";
 }
 
+
 #
 # Other and Special Commands
 # --------------------------
 
+alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
 alias check_libkey="curl -s --insecure https://raw.github.com/cPMarco/cpm/master/determine_your_sys_status.sh | sh";
-alias perdir=awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON[\"PWD\"]\;l=split\(dir\,parts,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\",\"/\",d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\';
+alias perdir=awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"]\;l=split\(dir\,parts,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\",\"/\",d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\';
 
 function oddthings () {
     echo  "$(tput bold)odd things$(tput sgr0)";
@@ -376,6 +376,7 @@ function cphelp_other() {
         help_command "oddthings" "Shows odd things that are running on odd ports";
         help_command "check_libkey" "Runs automated libkey checks";
         help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
+        help_command "cpmig" "cPanel Migration Script";
 };
 
 

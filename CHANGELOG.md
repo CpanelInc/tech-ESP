@@ -12,6 +12,7 @@ Pending Commit
  * Added a alert check for yum and also stale yum locks [#24]
  * Removed Grey color from $PS1 as it messes up some termanals [#12]
  * Updated sslhunter command to use the $DL_SCRIPTS var and be smarter when invoked. [#15]
+ * Added universal script download and converted existing scripts to use the universal downloader [#18] [#15]
 
 Feb 9, 2014
 -----------
