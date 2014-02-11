@@ -11,6 +11,11 @@ Pending Commit
  * Added check for vim and sets that as the editor,  if vim is non-existant, it falls back to vi and creates an alias for vim to vi. [#22] 
  * Added a alert check for yum and also stale yum locks [#24]
 
+Feb 11, 2014
+------------
+ * Give warning if not ran on cPanel box
+ * Remove SSP auto run option as Pacha now runs it for you
+
 Feb 9, 2014
 -----------
  * Removed mysqltuner becuse it is out of date and is being pulled from cPanel in case 90317
