@@ -7,14 +7,14 @@
 # Pre-flight check for cpanel
 #
 
-if [ -f /var/cpanel/cpanel ]; then
+if [ ! -d /var/cpanel ]; then
     echo "$(tput setaf 3) .: WARNING WARNING WARNING :.";
     echo "===============================";
     echo "cPanel has not been detected.  This script has only been tested on cPanel"
-    echo "Please Ctrl-C out of this script in the next 10 seconds otherwise it will run"; 
+    echo "Please Ctrl-C out of this script in the next 10 seconds otherwise it will run";
     for time in {10..0}; do
          echo "Proceading in $time.";
-        sleep 1;
+	sleep 1;
     done;
     echo "Foward March! $(tput sgr0)";
 fi;
