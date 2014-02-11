@@ -412,7 +412,7 @@ function PS1_Alerts() {
 	echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
 }
 
-export PS1="\n\033[1;30m\][\H | $IP_ADDR] \e[0;36mAlerts: \`PS1_Alerts\`\n\[\033[0;33m\][$TICKET]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
+export PS1="\n$(tput sgr0)[\H | $IP_ADDR] \e[0;36mAlerts: \`PS1_Alerts\`\n\[\033[0;33m\][$TICKET]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
 
 save_connected;
 if [ "$ssp" == "1" ]; then
