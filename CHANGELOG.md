@@ -15,6 +15,7 @@ Pending Commit
  * Added universal script download and converted existing scripts to use the universal downloader [#18] [#15]
  * Updated easyapache check to also check for the EA touch file to reduice false positives
  * Added command fcrdns
+ * Added command mysqltuner as an replacment for mysql tuner.  Useing MySQL tuning Primer Script from https://launchpad.net/mysql-tuning-primer/
 
 Feb 9, 2014
 -----------

@@ -344,10 +344,11 @@ function cphelp_mail(){
 # MySQL
 # -----
 alias mysqlerr="less /var/lib/mysql/`hostname`.err";
-
+alias mysqltuner="esp_script_dl "tuning-primer.sh" "https://launchpad.net/mysql-tuning-primer/trunk/1.6-r1/+download/tuning-primer.sh"
 function cphelp_mysql() {
     help_section "MySQL & Databases";
         help_command "mysqlerr" "Opens the mysql error log in less";
+        help_command "mysqltuner" "MySQL tuning Primer Script ( https://launchpad.net/mysql-tuning-primer/ )";
 }
 
 
