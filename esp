@@ -66,19 +66,20 @@ fi;
 
 
 function esp_script_dl(){
-    local SCRIPT="$1";
-    local URL="$2"
-    if [ -e $DL_SCRIPTS/$SCRIPT ]
-        then
-            $DL_SCRIPTS/$SCRIPT $@;
-    else
-        echo -ne "$(tput setaf 3)Script not yet downloaded, downloading...";
-        mkdir -p $DL_SCRIPTS;
-        wget --quiet -P $DL_SCRIPTS $URL;
-        chmod u+x $DL_SCRIPTS/$SCRIPT;
-        echo " Complete$(tput sgr0)";
-        $DL_SCRIPTS/$SCRIPT $@;
-    fi
+   local SCRIPT="$1";
+   local URL="$2"
+   shift 2;
+   if [ -e $DL_SCRIPTS/$SCRIPT ]
+       then
+           $DL_SCRIPTS/$SCRIPT $@;
+   else
+       echo -ne "$(tput setaf 3)Script not yet downloaded, downloading...";
+       mkdir -p $DL_SCRIPTS;
+       wget --quiet -P $DL_SCRIPTS $URL;
+       chmod u+x $DL_SCRIPTS/$SCRIPT;
+       echo " Complete$(tput sgr0)";
+       $DL_SCRIPTS/$SCRIPT $@;
+   fi
 }
 
 
@@ -344,7 +345,7 @@ function cphelp_mail(){
 # MySQL
 # -----
 alias mysqlerr="less /var/lib/mysql/`hostname`.err";
-alias mysqltuner="esp_script_dl "tuning-primer.sh" "https://launchpad.net/mysql-tuning-primer/trunk/1.6-r1/+download/tuning-primer.sh"
+alias mysqltuner="esp_script_dl \"tuning-primer.sh\" \"https://launchpad.net/mysql-tuning-primer/trunk/1.6-r1/+download/tuning-primer.sh\"";
 function cphelp_mysql() {
     help_section "MySQL & Databases";
         help_command "mysqlerr" "Opens the mysql error log in less";
