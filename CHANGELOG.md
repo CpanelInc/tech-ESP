@@ -13,6 +13,8 @@ Pending Commit
  * Removed Grey color from $PS1 as it messes up some termanals [#12]
  * Updated sslhunter command to use the $DL_SCRIPTS var and be smarter when invoked. [#15]
  * Added universal script download and converted existing scripts to use the universal downloader [#18] [#15]
+ * Updated easyapache check to also check for the EA touch file to reduice false positives
+ * Added command fcrdns
 
 Feb 9, 2014
 -----------
