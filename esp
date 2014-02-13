@@ -282,12 +282,12 @@ function fcrdns() {
 }
 function esp_fcdns_check() {
    local ip_to_check="$1";
-   local rdns="`dig @4.2.2.2 +short -x $ip_to_check`";
+   local rdns="`dig @4.2.2.2 +time=1 +short -x $ip_to_check`";
    if [ -z $rdns ]; then
        local rdns="Failed";
-       local rdns_ip="Failed";
+       local rdns_ip="N/A";
    else
-       local rdns_ip="`dig @4.2.2.2 +short -x $ip_to_check | xargs dig +short `";
+       local rdns_ip="`dig @4.2.2.2 +time=1 +short -x $ip_to_check | xargs dig +short `";
    fi
    if [ "$ip_to_check" = "$rdns_ip" ]; then
        echo "$(tput setaf 3)$ip_to_check$(tput setaf 2) PASSED FCrDNS valadation $(tput sgr0)$ip_to_check$(tput setaf 3)->$(tput sgr0)$rdns$(tput setaf 3)->$(tput sgr0)$rdns_ip";
