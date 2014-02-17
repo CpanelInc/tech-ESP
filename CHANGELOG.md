@@ -1,7 +1,7 @@
 ESP ChangeLog
 ============
 
-Pending Commit
+Feb 17, 2014
 --------------
  * Implemented New configuration option system
  * Configuration option to call SSP automaticaly, however SSP is still disabled by default
