@@ -233,7 +233,7 @@ function cl() { cd $@ && ls;};
 function bkc() { cp -v $@ $@`bktxt`;};
 function bkm() { mv -v $@ $@`bktxt`;};
 
-cphelp_backups(){
+esp_help_backupp(){
     help_section "Backups"
         help_command "bke filename" "Automatically creates a new backup of a file and opens the orignal";
         help_command "bkc filename" "Makes a backup copy of a file with the standard backup text";
@@ -253,7 +253,7 @@ alias sys-snap-start="cd /root;nohup sh sys-snap.sh &";
 alias cpu-count="grep proc /proc/cpuinfo |wc -l" ;
 alias cpu-info="grep model\ name /proc/cpuinfo | sed s/model\ name//g | uniq -c" ;
 
-cphelp_sys-info(){
+esp_help_sys-info(){
     help_section "System Information";
         help_command "sys-snap-install" "Installs sys-snap";
         help_command "sys-snap-start" "Starts sys-snap if already installed";
@@ -296,7 +296,7 @@ function esp_fcdns_check() {
    fi
 }
 
-function cphelp_net() {
+function esp_help_net() {
     help_section "Network Information";
         help_command "lsip" "Displays all the ip addresses in ifconfig, without the thrills";
         help_command "lsip-real" "Displays the external ip address of the server seen by the internet.";
@@ -311,7 +311,7 @@ function cphelp_net() {
 
 alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
 
-function cphelp_account() {
+function esp_help_account() {
     help_section "Account Information";
         help_command "accounting_cruft_probe" "Script to locate the remains of an account";
 }
@@ -323,7 +323,7 @@ function cphelp_account() {
 alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
 alias ssl-verify='openssl x509 -noout -text -in';
 
-function cphelp_ssl() {
+function esp_help_ssl() {
     help_section "SSL";
         help_command "ssl-verify" "Alias for openssl x509 -noout -text -in used to test certs";
         help_command "sslhunter" "Ussage: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
@@ -335,7 +335,7 @@ function cphelp_ssl() {
 alias exim-count="exim -bpc";
 alias exim-stats-size="du -h --max-depth=0 /var/lib/mysql/eximstats/" ;
 
-function cphelp_mail(){
+function esp_help_mail(){
     help_section "Exim & Mail"; 
         help_command "exim-count" "Displays the number of messages in the exim queue";
         help_command "exim-stats-size" "Displays the size of the eximstats database";
@@ -346,7 +346,7 @@ function cphelp_mail(){
 # -----
 alias mysqlerr="less /var/lib/mysql/`hostname`.err";
 alias mysqltuner="esp_script_dl \"tuning-primer.sh\" \"https://launchpad.net/mysql-tuning-primer/trunk/1.6-r1/+download/tuning-primer.sh\"";
-function cphelp_mysql() {
+function esp_help_mysql() {
     help_section "MySQL & Databases";
         help_command "mysqlerr" "Opens the mysql error log in less";
         help_command "mysqltuner" "MySQL tuning Primer Script ( https://launchpad.net/mysql-tuning-primer/ )";
@@ -359,7 +359,7 @@ function cphelp_mysql() {
 alias phpinfo="/usr/local/cpanel/bin/rebuild_phpconf --current";
 alias ea-info="curl -s https://raw.github.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
 
-function cphelp_PHP_Apache(){
+function esp_help_PHP_Apache(){
     help_section "PHP & Apache";
         help_command "phpinfo" "Displays php handler information";
         help_command "ea-info" "Runs a cpanel script to test ea information (ea-precheck.sh)";
@@ -375,7 +375,7 @@ alias cl-on="alias cd=cl";
 alias up="cd ..";
 alias la="ls -lah";
 
-function cphelp_bash_nav (){
+function esp_help_bash_nav (){
     help_section "Bash Navigation";
         help_command "cl directory" "Changes into a directory and outputs a ls";
         help_command "cl-on" "Enables cl for the cd command";
@@ -393,14 +393,16 @@ function cphelp_bash_nav (){
 alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
 alias check_libkey="curl -s --insecure https://raw.github.com/cPMarco/cpm/master/determine_your_sys_status.sh | sh";
-alias perdir=awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"]\;l=split\(dir\,parts,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\",\"/\",d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\';
+
+alias perdir=awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"\]\;l=split\(dir\,parts\,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\"\,\"/\"\,d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\';
+
 
 function oddthings () {
     echo  "$(tput bold)odd things$(tput sgr0)";
     lsof -Pni |grep -vE ':80|:443|imap|pop3|named|cpdavd|courier|dovecot|exim|mysql|pure|pro|sshd|cpsrvd|spamd|ntpd';
 };
 
-function cphelp_other() {
+function esp_help_other() {
     help_section "Other and Special Commands";
         help_command "save_connected" "saves out the current ssh logins and dismisses the ssh login alert";
         help_command "cphelp" "This Help message";
@@ -428,16 +430,16 @@ function help_command () {
 # The Actual Help Section 
 #
 function cphelp() {
-    cphelp_backups;
-    cphelp_sys-info;
-    cphelp_net;
-    cphelp_account;
-    cphelp_ssl;
-    cphelp_mail;
-    cphelp_mysql;
-    cphelp_PHP_Apache;
-    cphelp_bash_nav;
-    cphelp_other;
+    esp_help_backups;
+    esp_help_sys-info;
+    esp_help_net;
+    esp_help_account;
+    esp_help_ssl;
+    esp_help_mail;
+    esp_help_mysql;
+    esp_help_PHP_Apache;
+    esp_help_bash_nav;
+    esp_help_other;
 }
 #
 # Setup some envs for the PS1 prompt  
