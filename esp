@@ -104,16 +104,19 @@ function esp_script_dl(){
 #  displaying an alert if found.
 
 function check_upcp () {
-    ps auxf | grep 'cPanel Update\|upcp'|grep -v grep > /dev/null;
-    if [ $? -eq 0 ]; then
-        display_info "upcp";
-    fi;
+   if [[ ( -z $esp_check_disable_upcp ) && ( -z $esp_check_disable_all ) ]]; then
+       ps auxf | grep 'cPanel Update\|upcp'|grep -v grep > /dev/null;
+       if [ $? -eq 0 ]; then
+           display_info "upcp";
+       fi;
+   fi;
 }; 
 
 
 # Check for yum Lock
 
 function check_yum () {
+   if [[ ( -z $esp_check_disable_yum ) && ( -z $esp_check_disable_all ) ]]; then
     if [ -f /var/run/yum.pid ]; then
         ps -eo pid | grep `cat /var/run/yum.pid`>/dev/null
         if [ $? -eq 0 ]; then
@@ -122,59 +125,71 @@ function check_yum () {
             display_critical "Stale yum lock";
         fi;
     fi;
+fi;
 };
 
 
 # Check to see if backups are found in the process list
 
 function check_backups () {
+   if [[ ( -z $esp_check_disable_backup ) && ( -z $esp_check_disable_all ) ]]; then
     ps auxf|grep cpbackup|grep -v grep > /dev/null;
     if [ $? -eq 0 ]; then
         display_warn "Legacy Backup";
     fi;
+fi;
 }; 
 
 # Check to see if easyapache is found in the process list
 function check_easyapache () {
+   if [[ ( -z $esp_check_disable_easyapache ) && ( -z $esp_check_disable_all ) ]]; then
     if [ -f /usr/local/apache/AN_EASYAPACHE_BUILD_IS_CURRENTLY_RUNNING ]; then
         ps auxf | grep easyapache | grep -v grep > /dev/null;
         if [ $? -eq 0 ]; then
             display_warn "easyapache";
         fi;
     fi;
-
+fi;
 };
 
 # This check will verify if apache is up and the server status page is found
 function check_apache() {
-    curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
-    if [ $? -ne 0 ]; then
-        display_critical "Apache is DOWN";
-    fi;
+   if [[ ( -z $esp_check_disable_apache ) && ( -z $esp_check_disable_all ) ]]; then
+        curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
+        if [ $? -ne 0 ]; then
+            display_critical "Apache is DOWN";
+        fi;
+   fi;
 }
 
 # This check will verify if exim is in the processlist 
 function check_exim(){
-    ps aux | grep -v grep | grep '/usr/sbin/exim' > /dev/null;
-    if [ $? -eq 1 ]; then
-        display_critical "Exim is DOWN";
-    fi;
+   if [[ ( -z $esp_check_disable_exim ) && ( -z $esp_check_disable_all ) ]]; then
+        ps aux | grep -v grep | grep '/usr/sbin/exim' > /dev/null;
+        if [ $? -eq 1 ]; then
+            display_critical "Exim is DOWN";
+        fi;
+   fi;
 }
 
 # This function uses an mysql ping to check for root mysql connectivity.
 # If mysql is up, however if root can not connect to mysql it will fail
 
 function check_mysql() {
-    mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
-    if [ $? -ne 0 ]; then
-        display_critical "MySQL is DOWN";
-    fi;
+   if [[ ( -z $esp_check_disable_mysql ) && ( -z $esp_check_disable_all ) ]]; then
+        mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
+        if [ $? -ne 0 ]; then
+            display_critical "MySQL is DOWN";
+        fi;
+   fi;
 }
 
 function check_mailserver() {
-    if [ `ps aux | grep 'dovecot\|courier'| grep -v grep  | wc -l` -lt 1 ]; then
-        display_critical "Mailserver is Down";
-    fi
+    if [[ ( -z $esp_check_disable_mailserver ) && ( -z $esp_check_disable_all ) ]]; then
+        if [ `ps aux | grep 'dovecot\|courier'| grep -v grep  | wc -l` -lt 1 ]; then
+            display_critical "Mailserver is Down";
+        fi;
+    fi;
 }
 
 #
@@ -192,8 +207,10 @@ function current_connected() {
 
 # Function to check for new connections and display warning if new connections are found.
 function new_connected() {
-    if [ "`current_connected`" != "$connected_users" ];then
-        echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
+    if [[ ( -z $esp_check_disable_ssh ) && ( -z $esp_check_disable_all ) ]]; then
+        if [ "`current_connected`" != "$connected_users" ];then
+           echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
+        fi;
     fi;
 };
 

@@ -1,6 +1,11 @@
 ESP ChangeLog
 ============
 
+ * Added configuration options to disable checks [#26]
+ * Added DNS Only check
+ * bke will now use vim and not vi
+
+
 Feb 17, 2014
 --------------
  * Implemented New configuration option system
