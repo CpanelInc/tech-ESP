@@ -11,7 +11,7 @@ Usage
 
 To use esp run the following command on Centos 5 or 6:
 
-    source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+    # source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
 
 Special Thanks to Jerald Jonson for initially coding and hacking out the centos 5 bugs in the above source command that makes this tool possible, and his contributions to the ESP script itself.
 
@@ -22,7 +22,7 @@ Configuration options in ESP are bash envirmentals declared before the source co
 
 Example:
 
-    ssp=1 source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+    # ssp=1 source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
 
 ### SSP 
 
@@ -32,6 +32,41 @@ Configuration Option: ssp
 
 Options: '1' - Enable SSP, Default is disabled
 
+### Disable Checks
+
+ESP checks can be disabled individually or all of them can be disabled at once.  The checks are disabled by declaring the following variables before the source command or with export once ESP has been run.
+
+#### Disable all checks
+
+    esp_check_disable_all
+
+#### UPCP
+
+    esp_check_disable_yum
+
+#### Backups
+
+    esp_check_disable_backup
+
+#### EasyApache
+
+    esp_check_disable_easyapache
+
+#### Apache
+
+    esp_check_disable_apache
+
+#### Exim
+
+    esp_check_disable_apache
+
+#### MySQL
+
+    esp_check_disable_mysql
+
+#### Mailserver
+
+     esp_check_disable_mailserver
 
 Common Questions
 ----------------
