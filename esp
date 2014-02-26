@@ -419,7 +419,7 @@ alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMig
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
 alias check_libkey="curl -s --insecure https://raw.github.com/cPMarco/cpm/master/determine_your_sys_status.sh | sh";
 
-alias perdir=awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"\]\;l=split\(dir\,parts\,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\"\,\"/\"\,d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\';
+alias perdir="awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"\]\;l=split\(dir\,parts\,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\"\,\"/\"\,d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\'";
 
 
 function oddthings () {
@@ -482,7 +482,63 @@ export PS1_IP=`lsip-real`;
 export IP_ADDR=`lsip-real`;
 
 function PS1_Alerts() {
-	echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
+    (echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql` ) &
+    local esp_echo_pid=$!;
+    local esp_adtempts=5;
+    local esp_alert_check_no=0;
+    while [ $( local pid_check=`ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
+    do
+         sleep 0.2;
+         if [ "$esp_alert_check_no" -gt "$esp_adtempts" ];
+         then
+             kill $! > /dev/null;
+             echo "$(tput setaf 1)$(tput bold)ESP CRITICAL ERROR!";
+             cat <<EOF
+██████╗  █████╗ ███╗   ██╗ ██████╗ ███████╗██████╗ 
+██╔══██╗██╔══██╗████╗  ██║██╔════╝ ██╔════╝██╔══██╗
+██║  ██║███████║██╔██╗ ██║██║  ███╗█████╗  ██████╔╝
+██║  ██║██╔══██║██║╚██╗██║██║   ██║██╔══╝  ██╔══██╗
+██████╔╝██║  ██║██║ ╚████║╚██████╔╝███████╗██║  ██║
+╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+                                                   
+        ███████╗ ██████╗ ███╗   ██╗███████╗        
+        ╚══███╔╝██╔═══██╗████╗  ██║██╔════╝        
+          ███╔╝ ██║   ██║██╔██╗ ██║█████╗          
+         ███╔╝  ██║   ██║██║╚██╗██║██╔══╝          
+        ███████╗╚██████╔╝██║ ╚████║███████╗        
+        ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝        
+EOF
+echo -ne "$(tput sgr0)$(tput setaf 3)";
+cat <<EOF
+It apears that the ESP alert checks hung, resulting
+in an safty timeout to kill the ESP alert checks to
+prevent ESP from haning the entire shell.
+
+This issue is often caused when an server is under
+a ddos attack causing the apache check to hang when
+downloading the server status.  Please disable the 
+apache check with the following command:
+
+EOF
+echo "$(tput setaf 5)    # export esp_check_disable_apache=1$(tput setaf 3)";
+cat <<EOF
+
+If you contune to see this DANGER ZONE message after
+disabling the apache check it is recomended to
+disable all ESP Alert checks with this command:
+
+EOF
+echo "$(tput setaf 5)    # export esp_check_disable_all=1$(tput setaf 6)";
+cat <<EOF
+
+Please report this issue to citizen.
+
+Thank you and good luck!
+EOF
+         else
+              esp_alert_check_no=$(( $esp_alert_check_no + 1));
+         fi;
+   done; 
 }
 
 export PS1="\n$(tput setaf 7)[$(tput setaf 3)\H$(tput setaf 7)|$(tput setaf 3)$IP_ADDR$(tput setaf 7)] $(tput setaf 6)Alerts: \`PS1_Alerts\`\n$(tput setaf 7)[$(tput setaf 3)$TICKET$(tput setaf 7)]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
