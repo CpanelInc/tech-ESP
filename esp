@@ -412,10 +412,24 @@ function esp_help_bash_nav (){
 
 
 #
+# Migrations
+# ----------
+
+alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
+alias cpeval2="curl -s --insecure https://raw.github.com/cPanelMigrations/cpeval2/master/cpeval2 | perl";
+alias updateuserdomains-universal="lwp-request http://httpupdate.cpanel.net/cpanelsync/transfers_PUBLIC/pkgacct/ updateuserdomains-universal | perl";
+
+function esp_migrations () {
+    help_section "Migration Tools";
+        help_command "cpmig" "cPanel Migration Script";
+        help_command "cpeval2" "cpeval2 Migration Script";
+        help_command "updateuserdomains-universal" "Creates Required files for cpeval2";
+};
+
+#
 # Other and Special Commands
 # --------------------------
 
-alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
 alias check_libkey="curl -s --insecure https://raw.github.com/cPMarco/cpm/master/determine_your_sys_status.sh | sh";
 
@@ -434,7 +448,6 @@ function esp_help_other() {
         help_command "oddthings" "Shows odd things that are running on odd ports";
         help_command "check_libkey" "Runs automated libkey checks";
         help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
-        help_command "cpmig" "cPanel Migration Script";
 };
 
 
@@ -464,6 +477,7 @@ function cphelp() {
     esp_help_mysql;
     esp_help_PHP_Apache;
     esp_help_bash_nav;
+    esp_migrations;
     esp_help_other;
 }
 #
@@ -484,11 +498,11 @@ export IP_ADDR=`lsip-real`;
 function PS1_Alerts() {
     (echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql` ) &
     local esp_echo_pid=$!;
-    local esp_adtempts=5;
+    local esp_adtempts=10;
     local esp_alert_check_no=0;
     while [ $( local pid_check=`ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
     do
-         sleep 0.2;
+         sleep 0.1;
          if [ "$esp_alert_check_no" -gt "$esp_adtempts" ];
          then
              kill $! > /dev/null;
@@ -548,4 +562,3 @@ if [ "$ssp" == "1" ]; then
     curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
 fi
 echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
-
