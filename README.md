@@ -32,6 +32,13 @@ Configuration Option: ssp
 
 Options: '1' - Enable SSP, Default is disabled
 
+### Dirtectory Listing when entering an directory
+
+ESP can list the contents of an directory when you enter it by useing the command 'cl-on' however to have this set and enabled by default you can use the following configuration option
+
+    cl=1
+
+
 ### Disable Checks
 
 ESP checks can be disabled individually or all of them can be disabled at once.  The checks are disabled by declaring the following variables before the source command or with export once ESP has been run.
