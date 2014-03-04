@@ -1,7 +1,11 @@
 ESP ChangeLog
 ============
 
+<<<<<<< HEAD
  * Added directory listings enabled by default, can be disabled with cl-off
+=======
+ * Added configuration option for enabling cl-on by default.   Issue [#31]
+>>>>>>> 7e1a430cd4be14412c33a277d4c18f16702087ba
  * Added Migration Tools
  * Added timeout on the alert checks to prevent ESP from hanging the shell. DANGER ZONE!
  * Added configuration options to disable checks [#26]

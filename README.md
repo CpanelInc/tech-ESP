@@ -32,6 +32,7 @@ Configuration Option: ssp
 
 Options: '1' - Enable SSP, Default is disabled
 
+<<<<<<< HEAD
 ### Disable Default directory listing
 
 As of esp 0.03 directory listings are now enabled by default, however this may not be desired for all servers or techs.  To disable this option, there is the following configuration option to disable this feature. 
@@ -39,6 +40,14 @@ As of esp 0.03 directory listings are now enabled by default, however this may n
     esp_disable_cl
 
 Any value to this varable will disable the cl feature and is only checked on the initial run. The command cl-off can be used after the initial run.
+=======
+### Dirtectory Listing when entering an directory
+
+ESP can list the contents of an directory when you enter it by useing the command 'cl-on' however to have this set and enabled by default you can use the following configuration option
+
+    cl=1
+
+>>>>>>> 7e1a430cd4be14412c33a277d4c18f16702087ba
 
 ### Disable Checks
 
