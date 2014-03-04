@@ -1,6 +1,7 @@
 ESP ChangeLog
 ============
 
+ * Added directory listings enabled by default, can be disabled with cl-off
  * Added Migration Tools
  * Added timeout on the alert checks to prevent ESP from hanging the shell. DANGER ZONE!
  * Added configuration options to disable checks [#26]

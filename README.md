@@ -32,6 +32,14 @@ Configuration Option: ssp
 
 Options: '1' - Enable SSP, Default is disabled
 
+### Disable Default directory listing
+
+As of esp 0.03 directory listings are now enabled by default, however this may not be desired for all servers or techs.  To disable this option, there is the following configuration option to disable this feature. 
+
+    esp_disable_cl
+
+Any value to this varable will disable the cl feature and is only checked on the initial run. The command cl-off can be used after the initial run.
+
 ### Disable Checks
 
 ESP checks can be disabled individually or all of them can be disabled at once.  The checks are disabled by declaring the following variables before the source command or with export once ESP has been run.
