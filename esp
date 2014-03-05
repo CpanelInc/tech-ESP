@@ -70,8 +70,9 @@ fi;
 # CL on my default
 # ----------------
 
-if [ -z "$esp_disable_cl" ]; then
+if [ -z "$esp_cl_disable" ]; then
     alias cd="cl";
+    [ -z "$esp_cl_maxfiles" ] && export esp_cl_maxfiles=150;
     [ -n "$esp_debug" ] && echo "Enabled CL for CD";
 fi;
 
@@ -263,7 +264,14 @@ alias last-cpbackup="less \`ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/|
 alias bktxt='date +.Backup.%F.%T';
 alias backup-report="curl -s --insecure https://raw.github.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
 function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vim $@;};
-function cl() { \cd $@ && ls;};
+function cl() {
+    \cd $@;
+    if [ `ls -1 | wc -l` -lt "$esp_cl_maxfiles" ]; then
+        ls;
+    else
+        echo "Directoy listing disabled due to there being more than $esp_cl_maxfiles files to list";
+   fi;
+};
 function bkc() { cp -v $@ $@`bktxt`;};
 function bkm() { mv -v $@ $@`bktxt`;};
 

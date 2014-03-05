@@ -1,6 +1,7 @@
 ESP ChangeLog
 ============
 
+ * Added configuration option for the Max no. of files that cl will list (Default=150) Option:  esp_cl_maxfiles
  * Added configuration option for enabling cl-on by default.   Issue [#31]
  * Added Migration Tools
  * Added timeout on the alert checks to prevent ESP from hanging the shell. DANGER ZONE!

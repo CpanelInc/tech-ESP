@@ -32,13 +32,18 @@ Configuration Option: ssp
 
 Options: '1' - Enable SSP, Default is disabled
 
-### Disable Default directory listing
+### Default directory listing
 
 As of esp 0.03 directory listings are now enabled by default, however this may not be desired for all servers or techs.  To disable this option, there is the following configuration option to disable this feature. 
 
-    esp_disable_cl
+    esp_cl_disable
 
 Any value to this varable will disable the cl feature and is only checked on the initial run. The command cl-off can be used after the initial run.
+
+The second configuration option for the directory listing is the amount of files it will list.  By default this is 150, however it can be changed with the option esp_cl_maxfiles
+
+    esp_cl_maxfiles
+
 
 ### Disable Checks
 
