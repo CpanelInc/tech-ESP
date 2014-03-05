@@ -1,6 +1,9 @@
 ESP ChangeLog
 ============
 
+ * Updated run mode for DNS Only so that extra checks are skiped.
+ * Added command for quickly looking up an accounts info (acctinfo) 
+ * Added the command ips for an quick listing of just the IPS, one per line
  * Added configuration option for the Max no. of files that cl will list (Default=150) Option:  esp_cl_maxfiles
  * Added configuration option for enabling cl-on by default.   Issue [#31]
  * Added Migration Tools

@@ -25,6 +25,12 @@ fi;
 
 if [ -e /var/cpanel/dnsonly ]; then
     export DNSONLY=1;
+    export esp_check_disable_backup=1;
+    export esp_check_disable_easyapache=1;
+    export esp_check_disable_apache=1;
+    export esp_check_disable_mysql=1;
+    export esp_check_disable_mailserver=1;
+    echo "DNSONLY Detected, disabling checks for Backups, Easyapache, Apache, MySQL, Mailserver";
 fi;
 
 #
@@ -312,6 +318,10 @@ esp_help_sys-info(){
 alias lsip='ifconfig | grep "inet addr"| grep -v "127.0.0.1"';
 alias lsip-real="curl -s http://cpanel.net/showip.cgi";
 alias lsip-mainip="strings /var/cpanel/mainip";
+alias ips=$(ifconfig | awk '/inet/ {if ($2!~/127.0|:$/) print $2}' | awk -F: '{print "echo "$2}');
+
+# undocumented shortcut for marco
+alias localips='ips';
 
 function fcrdns() {
    if [ -n "$1" ]; then
@@ -340,7 +350,8 @@ function esp_fcdns_check() {
 
 function esp_help_net() {
     help_section "Network Information";
-        help_command "lsip" "Displays all the ip addresses in ifconfig, without the thrills";
+        help_command "ips" "Quick listing of the IP addresses on the server, and onlye the ips (one per line)";
+        help_command "lsip" "Displays all the ip addresses with subnet and Bcast addresses";
         help_command "lsip-real" "Displays the external ip address of the server seen by the internet.";
         help_command "lsip-mainip" "Displays cPanel's mainip from /v/c/mainip";
         help_command "fcrdns" "Checks the rDNS and Forward-confirmed reverse DNS of all IPs, or an IP you specify";
@@ -353,9 +364,15 @@ function esp_help_net() {
 
 alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
 
+# undocumeted shortcut for marco 
+alias domit="acctinfo";
+
+function acctinfo() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scripts/whoowns $dom); else tmp=$(egrep " $dom$" /etc/trueuserdomains|cut -d: -f1); u=$dom; dom=$tmp;fi; homedir=$(egrep "^$u:" /etc/passwd|cut -d":" -f6); www=$homedir/public_html/ ; echo -e "\n"$dom"\n"$u"\n"$www"\n"; fgrep -i spended /var/cpanel/users/$u; egrep "limit.*1$" /var/cpanel/users/$u; ssl=$homedir/ssl; }
+
 function esp_help_account() {
     help_section "Account Information";
         help_command "accounting_cruft_probe" "Script to locate the remains of an account";
+        help_command "acctinfo" "Gathers basic info for an account";
 }
 
 #
@@ -365,10 +382,13 @@ function esp_help_account() {
 alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
 alias ssl-verify='openssl x509 -noout -text -in';
 
+function sslshort() { openssl x509 -noout -text -in "$1" | egrep "Issuer|Subject:|^[ ]*Not"; }
+
 function esp_help_ssl() {
     help_section "SSL";
         help_command "ssl-verify" "Alias for openssl x509 -noout -text -in used to test certs";
         help_command "sslhunter" "Ussage: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
+        help_command "sslshort" "Brief output of ssl-verify, basicly just the output you need.";
 }
 
 #
@@ -515,11 +535,11 @@ export IP_ADDR=`lsip-real`;
 function PS1_Alerts() {
     (echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql` ) &
     local esp_echo_pid=$!;
-    local esp_adtempts=10;
+    local esp_adtempts=20;
     local esp_alert_check_no=0;
     while [ $( local pid_check=`ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
     do
-         sleep 0.1;
+         sleep 0.05;
          if [ "$esp_alert_check_no" -gt "$esp_adtempts" ];
          then
              kill $! > /dev/null;
