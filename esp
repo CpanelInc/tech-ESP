@@ -76,7 +76,7 @@ fi;
 # CL on my default
 # ----------------
 
-if [ -z "esp_disable_cl" ]; then
+if [ -z "$esp_disable_cl" ]; then
     alias cd="cl";
     [ -n "$esp_debug" ] && echo "Enabled CL for CD";
 fi;
