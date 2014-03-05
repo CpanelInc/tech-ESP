@@ -35,12 +35,6 @@ fi;
 # DL_SCRIPTS is the directory where downloaded scripts will be stored
 export DL_SCRIPTS="/root/cptechs/scripts/";
 
-# Check to see if cl is set to be on
-if [ "$cl" -eq "1" ]; then
-   alias cd='cl';
-fi;
-
-
 #
 # Editor detection
 # ----------------
