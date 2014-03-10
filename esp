@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # ESP - Enhanced Shell Prompt
+# Created by Citizen Kepler
+# https://github.com/cPanelTechs/ESP
 
 
 #
@@ -24,7 +26,7 @@ fi;
 # --------------
 
 if [ -e /var/cpanel/dnsonly ]; then
-    export DNSONLY=1;
+    export OS="DNSONLY";
     export esp_check_disable_backup=1;
     export esp_check_disable_easyapache=1;
     export esp_check_disable_apache=1;
