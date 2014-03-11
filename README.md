@@ -105,6 +105,45 @@ Currently the script will check for the following in the PS1 Alerts:
 
 ESP has many features that can be useful besides being able to read minds.   ESP comes with an command cphelp that can be used to get more information on the commands available.
 
+Devlopment Hooks
+----------------
+
+ESP features devlopment hooks to allow for extra features and functions inside ESP without the need of forking the code and modifying ESP.  Hooks are relitively easy to use and can add a lot of coustom functions to ESP.  To create an hook all you need to do is declare an bash function with the name of the hook.  Then when esp hits the hook it will test to see if the user has declared an hook and if so run it. 
+
+
+### Pre-ESP Startup 
+
+    esp_hook_pre
+
+This hook is run at the ESP startup, so if you wanted to run some code on esp startup you can use this hook. This hook is not enclosed in safty timeouts, so if the command gets caught in an loop it will crash the shell.
+
+#### Example of pre hook
+
+An example usage of an pre hook could be to read esp configuration options from an file.  ESP currently has no plans on devloping this, however it been requested.  An pre hook can be used to acomplish this.  In the following example we will declare an bash function and then load the configuration from inside this function/hook:
+
+    function esp_hook_pre { [ -f ~/.esprc ] && source ~/.esprc;};
+
+Now you can run esp and esp will detect the hook and load ~/.esprc if it exists.  Addtionaly you can combine the function, with configuration options and the esp command for an (admitdly large) one liner. 
+
+    esp_check_disable_mysql=1 function esp_hook_pre { [ -f ~/.esprc ] && source ~/.esprc;}; source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+
+### Post-ESP hook 
+
+    esp_hook_post
+
+Post hooks are usefull for running code after esp startup has compleated.  the post hook is the last thing run before esp startup ends before droping the user to the ESP shell.  This comman is not run through the safty timeout system so if your hook gets caught in an loop it will crash the shell.
+
+#### Example
+
+An example of an ESP post hook is to modify the PS1 var.  Like the pre hook we will be declaring an bash function with the hook name and placing the hook code inside the function:
+
+    function esp_hook_post { export PS1="$PS1 >>>"; };
+
+Like the pre hook you can place the function before the esp command for an one liner:
+
+    function esp_hook_post { export PS1="$PS1 >>>"; }; source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+
+
 Credits
 -------
 
