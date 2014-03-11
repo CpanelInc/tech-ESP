@@ -1,6 +1,8 @@
 ESP ChangeLog
 ============
 
+Mar 11, 2014 - v0.03
+--------------------
  * Updated run mode for DNS Only so that extra checks are skiped.
  * Added command for quickly looking up an accounts info (acctinfo) 
  * Added the command ips for an quick listing of just the IPS, one per line
@@ -13,7 +15,7 @@ ESP ChangeLog
  * bke will now use vim and not vi
 
 
-Feb 17, 2014
+Feb 17, 2014 - v0.02
 --------------
  * Implemented New configuration option system
  * Configuration option to call SSP automaticaly, however SSP is still disabled by default
@@ -29,7 +31,7 @@ Feb 17, 2014
  * Added command fcrdns
  * Added command mysqltuner as an replacment for mysql tuner.  Useing MySQL tuning Primer Script from https://launchpad.net/mysql-tuning-primer/
 
-Feb 9, 2014
+Feb 9, 2014 - v0.01
 -----------
  * Removed mysqltuner becuse it is out of date and is being pulled from cPanel in case 90317
  * Add Change Log [#16]
