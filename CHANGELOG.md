@@ -1,6 +1,13 @@
 ESP ChangeLog
 ============
 
+v0.04
+-----
+
+* Added Devlopment hooks. pre and post hooks called esp_hook_pre and esp_hook_post
+
+
+
 Mar 11, 2014 - v0.03
 --------------------
  * Updated run mode for DNS Only so that extra checks are skiped.
