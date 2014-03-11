@@ -1,6 +1,18 @@
 ESP ChangeLog
 ============
 
+ * Updated run mode for DNS Only so that extra checks are skiped.
+ * Added command for quickly looking up an accounts info (acctinfo) 
+ * Added the command ips for an quick listing of just the IPS, one per line
+ * Added configuration option for the Max no. of files that cl will list (Default=150) Option:  esp_cl_maxfiles
+ * Added configuration option for enabling cl-on by default.   Issue [#31]
+ * Added Migration Tools
+ * Added timeout on the alert checks to prevent ESP from hanging the shell. DANGER ZONE!
+ * Added configuration options to disable checks [#26]
+ * Added DNS Only check
+ * bke will now use vim and not vi
+
+
 Feb 17, 2014
 --------------
  * Implemented New configuration option system

@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # ESP - Enhanced Shell Prompt
+# Created by Citizen Kepler
+# https://github.com/cPanelTechs/ESP
 
 
 #
@@ -20,13 +22,26 @@ if [ ! -d /var/cpanel ]; then
 fi;
 
 #
+# DNS Only Check
+# --------------
+
+if [ -e /var/cpanel/dnsonly ]; then
+    export OS="DNSONLY";
+    export esp_check_disable_backup=1;
+    export esp_check_disable_easyapache=1;
+    export esp_check_disable_apache=1;
+    export esp_check_disable_mysql=1;
+    export esp_check_disable_mailserver=1;
+    echo "DNSONLY Detected, disabling checks for Backups, Easyapache, Apache, MySQL, Mailserver";
+fi;
+
+#
 # Initial Setup
 # -------------
 #
 
 # DL_SCRIPTS is the directory where downloaded scripts will be stored
 export DL_SCRIPTS="/root/cptechs/scripts/";
-
 
 #
 # Editor detection
@@ -56,6 +71,17 @@ if [ `echo $PS1 | grep "cPs#"| wc -l` -ge 1 ]; then
     export TICKET=`echo $PS1 | awk '{{print $3}}'| cut -d \@ -f 2`;
 else
     export TICKET="n/a";
+fi;
+
+
+#
+# CL on my default
+# ----------------
+
+if [ -z "$esp_cl_disable" ]; then
+    alias cd="cl";
+    [ -z "$esp_cl_maxfiles" ] && export esp_cl_maxfiles=150;
+    [ -n "$esp_debug" ] && echo "Enabled CL for CD";
 fi;
 
 
@@ -96,16 +122,19 @@ function esp_script_dl(){
 #  displaying an alert if found.
 
 function check_upcp () {
-    ps auxf | grep 'cPanel Update\|upcp'|grep -v grep > /dev/null;
-    if [ $? -eq 0 ]; then
-        display_info "upcp";
-    fi;
+   if [[ ( -z $esp_check_disable_upcp ) && ( -z $esp_check_disable_all ) ]]; then
+       ps auxf | grep 'cPanel Update\|upcp'|grep -v grep > /dev/null;
+       if [ $? -eq 0 ]; then
+           display_info "upcp";
+       fi;
+   fi;
 }; 
 
 
 # Check for yum Lock
 
 function check_yum () {
+   if [[ ( -z $esp_check_disable_yum ) && ( -z $esp_check_disable_all ) ]]; then
     if [ -f /var/run/yum.pid ]; then
         ps -eo pid | grep `cat /var/run/yum.pid`>/dev/null
         if [ $? -eq 0 ]; then
@@ -114,59 +143,71 @@ function check_yum () {
             display_critical "Stale yum lock";
         fi;
     fi;
+fi;
 };
 
 
 # Check to see if backups are found in the process list
 
 function check_backups () {
+   if [[ ( -z $esp_check_disable_backup ) && ( -z $esp_check_disable_all ) ]]; then
     ps auxf|grep cpbackup|grep -v grep > /dev/null;
     if [ $? -eq 0 ]; then
-        display_warn "Legacy Backup";
+        display_warn "Backup (check for false positve)";
     fi;
+fi;
 }; 
 
 # Check to see if easyapache is found in the process list
 function check_easyapache () {
+   if [[ ( -z $esp_check_disable_easyapache ) && ( -z $esp_check_disable_all ) ]]; then
     if [ -f /usr/local/apache/AN_EASYAPACHE_BUILD_IS_CURRENTLY_RUNNING ]; then
         ps auxf | grep easyapache | grep -v grep > /dev/null;
         if [ $? -eq 0 ]; then
             display_warn "easyapache";
         fi;
     fi;
-
+fi;
 };
 
 # This check will verify if apache is up and the server status page is found
 function check_apache() {
-    curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
-    if [ $? -ne 0 ]; then
-        display_critical "Apache is DOWN";
-    fi;
+   if [[ ( -z $esp_check_disable_apache ) && ( -z $esp_check_disable_all ) ]]; then
+        curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
+        if [ $? -ne 0 ]; then
+            display_critical "Apache is DOWN";
+        fi;
+   fi;
 }
 
 # This check will verify if exim is in the processlist 
 function check_exim(){
-    ps aux | grep -v grep | grep '/usr/sbin/exim' > /dev/null;
-    if [ $? -eq 1 ]; then
-        display_critical "Exim is DOWN";
-    fi;
+   if [[ ( -z $esp_check_disable_exim ) && ( -z $esp_check_disable_all ) ]]; then
+        ps aux | grep -v grep | grep '/usr/sbin/exim' > /dev/null;
+        if [ $? -eq 1 ]; then
+            display_critical "Exim is DOWN";
+        fi;
+   fi;
 }
 
 # This function uses an mysql ping to check for root mysql connectivity.
 # If mysql is up, however if root can not connect to mysql it will fail
 
 function check_mysql() {
-    mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
-    if [ $? -ne 0 ]; then
-        display_critical "MySQL is DOWN";
-    fi;
+   if [[ ( -z $esp_check_disable_mysql ) && ( -z $esp_check_disable_all ) ]]; then
+        mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
+        if [ $? -ne 0 ]; then
+            display_critical "MySQL is DOWN";
+        fi;
+   fi;
 }
 
 function check_mailserver() {
-    if [ `ps aux | grep 'dovecot\|courier'| grep -v grep  | wc -l` -lt 1 ]; then
-        display_critical "Mailserver is Down";
-    fi
+    if [[ ( -z $esp_check_disable_mailserver ) && ( -z $esp_check_disable_all ) ]]; then
+        if [ `ps aux | grep 'dovecot\|courier'| grep -v grep  | wc -l` -lt 1 ]; then
+            display_critical "Mailserver is Down";
+        fi;
+    fi;
 }
 
 #
@@ -184,8 +225,10 @@ function current_connected() {
 
 # Function to check for new connections and display warning if new connections are found.
 function new_connected() {
-    if [ "`current_connected`" != "$connected_users" ];then
-        echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
+    if [[ ( -z $esp_check_disable_ssh ) && ( -z $esp_check_disable_all ) ]]; then
+        if [ "`current_connected`" != "$connected_users" ];then
+           echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
+        fi;
     fi;
 };
 
@@ -228,12 +271,19 @@ function display_info(){
 alias last-cpbackup="less \`ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/| head -n 1\`";
 alias bktxt='date +.Backup.%F.%T';
 alias backup-report="curl -s --insecure https://raw.github.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
-function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vi $@;};
-function cl() { cd $@ && ls;};
+function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vim $@;};
+function cl() {
+    \cd $@;
+    if [ `ls -1 | wc -l` -lt "$esp_cl_maxfiles" ]; then
+        ls;
+    else
+        echo "Directoy listing disabled due to there being more than $esp_cl_maxfiles files to list";
+   fi;
+};
 function bkc() { cp -v $@ $@`bktxt`;};
 function bkm() { mv -v $@ $@`bktxt`;};
 
-cphelp_backups(){
+esp_help_backupp(){
     help_section "Backups"
         help_command "bke filename" "Automatically creates a new backup of a file and opens the orignal";
         help_command "bkc filename" "Makes a backup copy of a file with the standard backup text";
@@ -253,7 +303,7 @@ alias sys-snap-start="cd /root;nohup sh sys-snap.sh &";
 alias cpu-count="grep proc /proc/cpuinfo |wc -l" ;
 alias cpu-info="grep model\ name /proc/cpuinfo | sed s/model\ name//g | uniq -c" ;
 
-cphelp_sys-info(){
+esp_help_sys-info(){
     help_section "System Information";
         help_command "sys-snap-install" "Installs sys-snap";
         help_command "sys-snap-start" "Starts sys-snap if already installed";
@@ -270,6 +320,10 @@ cphelp_sys-info(){
 alias lsip='ifconfig | grep "inet addr"| grep -v "127.0.0.1"';
 alias lsip-real="curl -s http://cpanel.net/showip.cgi";
 alias lsip-mainip="strings /var/cpanel/mainip";
+alias ips=$(ifconfig | awk '/inet/ {if ($2!~/127.0|:$/) print $2}' | awk -F: '{print "echo "$2}');
+
+# undocumented shortcut for marco
+alias localips='ips';
 
 function fcrdns() {
    if [ -n "$1" ]; then
@@ -296,9 +350,10 @@ function esp_fcdns_check() {
    fi
 }
 
-function cphelp_net() {
+function esp_help_net() {
     help_section "Network Information";
-        help_command "lsip" "Displays all the ip addresses in ifconfig, without the thrills";
+        help_command "ips" "Quick listing of the IP addresses on the server, and onlye the ips (one per line)";
+        help_command "lsip" "Displays all the ip addresses with subnet and Bcast addresses";
         help_command "lsip-real" "Displays the external ip address of the server seen by the internet.";
         help_command "lsip-mainip" "Displays cPanel's mainip from /v/c/mainip";
         help_command "fcrdns" "Checks the rDNS and Forward-confirmed reverse DNS of all IPs, or an IP you specify";
@@ -311,9 +366,15 @@ function cphelp_net() {
 
 alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
 
-function cphelp_account() {
+# undocumeted shortcut for marco 
+alias domit="acctinfo";
+
+function acctinfo() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scripts/whoowns $dom); else tmp=$(egrep " $dom$" /etc/trueuserdomains|cut -d: -f1); u=$dom; dom=$tmp;fi; homedir=$(egrep "^$u:" /etc/passwd|cut -d":" -f6); www=$homedir/public_html/ ; echo -e "\n"$dom"\n"$u"\n"$www"\n"; fgrep -i spended /var/cpanel/users/$u; egrep "limit.*1$" /var/cpanel/users/$u; ssl=$homedir/ssl; }
+
+function esp_help_account() {
     help_section "Account Information";
         help_command "accounting_cruft_probe" "Script to locate the remains of an account";
+        help_command "acctinfo" "Gathers basic info for an account";
 }
 
 #
@@ -323,10 +384,13 @@ function cphelp_account() {
 alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
 alias ssl-verify='openssl x509 -noout -text -in';
 
-function cphelp_ssl() {
+function sslshort() { openssl x509 -noout -text -in "$1" | egrep "Issuer|Subject:|^[ ]*Not"; }
+
+function esp_help_ssl() {
     help_section "SSL";
         help_command "ssl-verify" "Alias for openssl x509 -noout -text -in used to test certs";
         help_command "sslhunter" "Ussage: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
+        help_command "sslshort" "Brief output of ssl-verify, basicly just the output you need.";
 }
 
 #
@@ -335,7 +399,7 @@ function cphelp_ssl() {
 alias exim-count="exim -bpc";
 alias exim-stats-size="du -h --max-depth=0 /var/lib/mysql/eximstats/" ;
 
-function cphelp_mail(){
+function esp_help_mail(){
     help_section "Exim & Mail"; 
         help_command "exim-count" "Displays the number of messages in the exim queue";
         help_command "exim-stats-size" "Displays the size of the eximstats database";
@@ -346,7 +410,7 @@ function cphelp_mail(){
 # -----
 alias mysqlerr="less /var/lib/mysql/`hostname`.err";
 alias mysqltuner="esp_script_dl \"tuning-primer.sh\" \"https://launchpad.net/mysql-tuning-primer/trunk/1.6-r1/+download/tuning-primer.sh\"";
-function cphelp_mysql() {
+function esp_help_mysql() {
     help_section "MySQL & Databases";
         help_command "mysqlerr" "Opens the mysql error log in less";
         help_command "mysqltuner" "MySQL tuning Primer Script ( https://launchpad.net/mysql-tuning-primer/ )";
@@ -359,7 +423,7 @@ function cphelp_mysql() {
 alias phpinfo="/usr/local/cpanel/bin/rebuild_phpconf --current";
 alias ea-info="curl -s https://raw.github.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
 
-function cphelp_PHP_Apache(){
+function esp_help_PHP_Apache(){
     help_section "PHP & Apache";
         help_command "phpinfo" "Displays php handler information";
         help_command "ea-info" "Runs a cpanel script to test ea information (ea-precheck.sh)";
@@ -375,7 +439,7 @@ alias cl-on="alias cd=cl";
 alias up="cd ..";
 alias la="ls -lah";
 
-function cphelp_bash_nav (){
+function esp_help_bash_nav (){
     help_section "Bash Navigation";
         help_command "cl directory" "Changes into a directory and outputs a ls";
         help_command "cl-on" "Enables cl for the cd command";
@@ -387,27 +451,42 @@ function cphelp_bash_nav (){
 
 
 #
+# Migrations
+# ----------
+
+alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
+alias cpeval2="curl -s --insecure https://raw.github.com/cPanelMigrations/cpeval2/master/cpeval2 | perl";
+alias updateuserdomains-universal="lwp-request http://httpupdate.cpanel.net/cpanelsync/transfers_PUBLIC/pkgacct/ updateuserdomains-universal | perl";
+
+function esp_migrations () {
+    help_section "Migration Tools";
+        help_command "cpmig" "cPanel Migration Script";
+        help_command "cpeval2" "cpeval2 Migration Script";
+        help_command "updateuserdomains-universal" "Creates Required files for cpeval2";
+};
+
+#
 # Other and Special Commands
 # --------------------------
 
-alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
 alias check_libkey="curl -s --insecure https://raw.github.com/cPMarco/cpm/master/determine_your_sys_status.sh | sh";
-alias perdir=awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"]\;l=split\(dir\,parts,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\",\"/\",d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\';
+
+alias perdir="awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"\]\;l=split\(dir\,parts\,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\"\,\"/\"\,d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\'";
+
 
 function oddthings () {
     echo  "$(tput bold)odd things$(tput sgr0)";
     lsof -Pni |grep -vE ':80|:443|imap|pop3|named|cpdavd|courier|dovecot|exim|mysql|pure|pro|sshd|cpsrvd|spamd|ntpd';
 };
 
-function cphelp_other() {
+function esp_help_other() {
     help_section "Other and Special Commands";
         help_command "save_connected" "saves out the current ssh logins and dismisses the ssh login alert";
         help_command "cphelp" "This Help message";
         help_command "oddthings" "Shows odd things that are running on odd ports";
         help_command "check_libkey" "Runs automated libkey checks";
         help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
-        help_command "cpmig" "cPanel Migration Script";
 };
 
 
@@ -428,16 +507,17 @@ function help_command () {
 # The Actual Help Section 
 #
 function cphelp() {
-    cphelp_backups;
-    cphelp_sys-info;
-    cphelp_net;
-    cphelp_account;
-    cphelp_ssl;
-    cphelp_mail;
-    cphelp_mysql;
-    cphelp_PHP_Apache;
-    cphelp_bash_nav;
-    cphelp_other;
+    esp_help_backups;
+    esp_help_sys-info;
+    esp_help_net;
+    esp_help_account;
+    esp_help_ssl;
+    esp_help_mail;
+    esp_help_mysql;
+    esp_help_PHP_Apache;
+    esp_help_bash_nav;
+    esp_migrations;
+    esp_help_other;
 }
 #
 # Setup some envs for the PS1 prompt  
@@ -455,7 +535,63 @@ export PS1_IP=`lsip-real`;
 export IP_ADDR=`lsip-real`;
 
 function PS1_Alerts() {
-	echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql`;
+    (echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql` ) &
+    local esp_echo_pid=$!;
+    local esp_adtempts=20;
+    local esp_alert_check_no=0;
+    while [ $( local pid_check=`ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
+    do
+         sleep 0.05;
+         if [ "$esp_alert_check_no" -gt "$esp_adtempts" ];
+         then
+             kill $! > /dev/null;
+             echo "$(tput setaf 1)$(tput bold)ESP CRITICAL ERROR!";
+             cat <<EOF
+██████╗  █████╗ ███╗   ██╗ ██████╗ ███████╗██████╗ 
+██╔══██╗██╔══██╗████╗  ██║██╔════╝ ██╔════╝██╔══██╗
+██║  ██║███████║██╔██╗ ██║██║  ███╗█████╗  ██████╔╝
+██║  ██║██╔══██║██║╚██╗██║██║   ██║██╔══╝  ██╔══██╗
+██████╔╝██║  ██║██║ ╚████║╚██████╔╝███████╗██║  ██║
+╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+                                                   
+        ███████╗ ██████╗ ███╗   ██╗███████╗        
+        ╚══███╔╝██╔═══██╗████╗  ██║██╔════╝        
+          ███╔╝ ██║   ██║██╔██╗ ██║█████╗          
+         ███╔╝  ██║   ██║██║╚██╗██║██╔══╝          
+        ███████╗╚██████╔╝██║ ╚████║███████╗        
+        ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝        
+EOF
+echo -ne "$(tput sgr0)$(tput setaf 3)";
+cat <<EOF
+It apears that the ESP alert checks hung, resulting
+in an safty timeout to kill the ESP alert checks to
+prevent ESP from haning the entire shell.
+
+This issue is often caused when an server is under
+a ddos attack causing the apache check to hang when
+downloading the server status.  Please disable the 
+apache check with the following command:
+
+EOF
+echo "$(tput setaf 5)    # export esp_check_disable_apache=1$(tput setaf 3)";
+cat <<EOF
+
+If you contune to see this DANGER ZONE message after
+disabling the apache check it is recomended to
+disable all ESP Alert checks with this command:
+
+EOF
+echo "$(tput setaf 5)    # export esp_check_disable_all=1$(tput setaf 6)";
+cat <<EOF
+
+Please report this issue to citizen.
+
+Thank you and good luck!
+EOF
+         else
+              esp_alert_check_no=$(( $esp_alert_check_no + 1));
+         fi;
+   done; 
 }
 
 export PS1="\n$(tput setaf 7)[$(tput setaf 3)\H$(tput setaf 7)|$(tput setaf 3)$IP_ADDR$(tput setaf 7)] $(tput setaf 6)Alerts: \`PS1_Alerts\`\n$(tput setaf 7)[$(tput setaf 3)$TICKET$(tput setaf 7)]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
@@ -465,4 +601,3 @@ if [ "$ssp" == "1" ]; then
     curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
 fi
 echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
-
