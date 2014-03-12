@@ -9,9 +9,9 @@
 # ESP hook for startup
 # --------------------
 
-if [ $(declare -Ff esp_hook_init) == "esp_hook_init" ]; then 
-    esp_hook_pre;
-fi;
+#if [ $(declare -Ff esp_hook_init) == "esp_hook_init" ]; then 
+#    esp_hook_pre;
+#fi;
 
 
 
@@ -616,8 +616,8 @@ fi
 # ESP hook for Post Startup
 # -------------------------
 
-if [ $(declare -Ff esp_hook_post) == "esp_hook_post" ]; then
-    esp_hook_post;
-fi;
+#if [ $(declare -Ff esp_hook_post) == "esp_hook_post" ]; then
+#    esp_hook_post;
+#fi;
 
 echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
