@@ -9,7 +9,8 @@
 # ESP hook for startup
 # --------------------
 
-if [ $(declare -Ff esp_hook_init) == "esp_hook_init" ]; then 
+if [ $(declare -Ff esp_hook_init) == "esp_hook_init" ];
+then 
     esp_hook_pre;
 fi;
 
