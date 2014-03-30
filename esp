@@ -9,8 +9,8 @@
 # ESP hook for startup
 # --------------------
 
-if [ $(declare -Ff esp_hook_init) == "esp_hook_init" ]; then 
-    esp_hook_pre;
+if [ "$(declare -Ff esp_hook_pre)" == "esp_hook_pre" ]; then
+  esp_hook_pre;
 fi;
 
 
@@ -73,12 +73,13 @@ fi;
 export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 
 # Simple Alias to ensure color is not always set to on, that can cause issues with less
-alias grep="grep --color=auto ";
+alias grep="/bin/grep --color=auto ";
 
 
 # Grab the Ticket number if it exists from the PS1 prompt 
-if [ `echo $PS1 | grep "cPs#"| wc -l` -ge 1 ]; then
-    export TICKET=`echo $PS1 | awk '{{print $3}}'| cut -d \@ -f 2`;
+  # Dev Note: Don't escape grep since we alias it
+if [ `echo $PS1 | grep "cPs#"| \wc -l` -ge 1 ]; then
+    export TICKET=`echo $PS1 | \awk '{{print $3}}'| \cut -d \@ -f 2`;
 else
     export TICKET="n/a";
 fi;
@@ -91,7 +92,7 @@ fi;
 if [ -z "$esp_cl_disable" ]; then
     alias cd="cl";
     [ -z "$esp_cl_maxfiles" ] && export esp_cl_maxfiles=150;
-    [ -n "$esp_debug" ] && echo "Enabled CL for CD";
+    [ -n "$esp_debug" ] && \echo "Enabled CL for CD";
 fi;
 
 
@@ -109,11 +110,11 @@ function esp_script_dl(){
        then
            $DL_SCRIPTS/$SCRIPT $@;
    else
-       echo -ne "$(tput setaf 3)Script not yet downloaded, downloading...";
-       mkdir -p $DL_SCRIPTS;
-       wget --quiet -P $DL_SCRIPTS $URL;
-       chmod u+x $DL_SCRIPTS/$SCRIPT;
-       echo " Complete$(tput sgr0)";
+       \echo -ne "$(tput setaf 3)Script not yet downloaded, downloading...";
+       \mkdir -p $DL_SCRIPTS;
+       \wget --quiet -P $DL_SCRIPTS $URL;
+       \chmod u+x $DL_SCRIPTS/$SCRIPT;
+       \echo " Complete$(tput sgr0)";
        $DL_SCRIPTS/$SCRIPT $@;
    fi
 }
@@ -133,7 +134,8 @@ function esp_script_dl(){
 
 function check_upcp () {
    if [[ ( -z $esp_check_disable_upcp ) && ( -z $esp_check_disable_all ) ]]; then
-       ps auxf | grep 'cPanel Update\|upcp'|grep -v grep > /dev/null;
+       # Escape PS and enhace the grep to save space
+       \ps auxf | egrep '([c]Panel Update|[u]pcp)' > /dev/null;
        if [ $? -eq 0 ]; then
            display_info "upcp";
        fi;
@@ -146,7 +148,7 @@ function check_upcp () {
 function check_yum () {
    if [[ ( -z $esp_check_disable_yum ) && ( -z $esp_check_disable_all ) ]]; then
     if [ -f /var/run/yum.pid ]; then
-        ps -eo pid | grep `cat /var/run/yum.pid`>/dev/null
+        \ps -eo pid | grep `cat /var/run/yum.pid`>/dev/null
         if [ $? -eq 0 ]; then
             display_warn "yum";
         else
@@ -161,7 +163,8 @@ fi;
 
 function check_backups () {
    if [[ ( -z $esp_check_disable_backup ) && ( -z $esp_check_disable_all ) ]]; then
-    ps auxf|grep cpbackup|grep -v grep > /dev/null;
+    # Escape PS and enhance grep to save issues
+    \ps auxf|grep [c]pbackup > /dev/null;
     if [ $? -eq 0 ]; then
         display_warn "Backup (check for false positve)";
     fi;
@@ -172,7 +175,8 @@ fi;
 function check_easyapache () {
    if [[ ( -z $esp_check_disable_easyapache ) && ( -z $esp_check_disable_all ) ]]; then
     if [ -f /usr/local/apache/AN_EASYAPACHE_BUILD_IS_CURRENTLY_RUNNING ]; then
-        ps auxf | grep easyapache | grep -v grep > /dev/null;
+        # Escape PS and enhance grep to save space
+        \ps auxf | grep [e]asyapache  > /dev/null;
         if [ $? -eq 0 ]; then
             display_warn "easyapache";
         fi;
@@ -183,7 +187,7 @@ fi;
 # This check will verify if apache is up and the server status page is found
 function check_apache() {
    if [[ ( -z $esp_check_disable_apache ) && ( -z $esp_check_disable_all ) ]]; then
-        curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
+        \curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
         if [ $? -ne 0 ]; then
             display_critical "Apache is DOWN";
         fi;
@@ -193,7 +197,8 @@ function check_apache() {
 # This check will verify if exim is in the processlist 
 function check_exim(){
    if [[ ( -z $esp_check_disable_exim ) && ( -z $esp_check_disable_all ) ]]; then
-        ps aux | grep -v grep | grep '/usr/sbin/exim' > /dev/null;
+        # Escape PS and enhance grep to save space
+        \ps aux | grep '/usr/sbin/exi[m]' > /dev/null;
         if [ $? -eq 1 ]; then
             display_critical "Exim is DOWN";
         fi;
@@ -205,7 +210,7 @@ function check_exim(){
 
 function check_mysql() {
    if [[ ( -z $esp_check_disable_mysql ) && ( -z $esp_check_disable_all ) ]]; then
-        mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
+        \mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
         if [ $? -ne 0 ]; then
             display_critical "MySQL is DOWN";
         fi;
@@ -237,7 +242,7 @@ function current_connected() {
 function new_connected() {
     if [[ ( -z $esp_check_disable_ssh ) && ( -z $esp_check_disable_all ) ]]; then
         if [ "`current_connected`" != "$connected_users" ];then
-           echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
+           \echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
         fi;
     fi;
 };
@@ -253,14 +258,14 @@ function save_connected(){
 # --------------------
 
 function display_critical(){
-    echo -ne "$(tput setaf 1)$(tput bold)$1$(tput sgr0), "
+    \echo -ne "$(tput setaf 1)$(tput bold)$1$(tput sgr0), "
 };
 
 function display_warn(){
-    echo -ne "$(tput setaf 3)$1$(tput sgr0), "
+    \echo -ne "$(tput setaf 3)$1$(tput sgr0), "
 };
 function display_info(){
-    echo -ne "$(tput setaf 6)$1$(tput sgr0), "
+    \echo -ne "$(tput setaf 6)$1$(tput sgr0), "
 };
 
 
@@ -480,7 +485,7 @@ function esp_migrations () {
 # --------------------------
 
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
-alias check_libkey="curl -s --insecure https://raw.github.com/cPMarco/cpm/master/determine_your_sys_status.sh | sh";
+alias check_libkey="sh <(curl -s --insecure https://raw.github.com/cPMarco/cpm/master/libkey_check.sh) -v";
 
 alias perdir="awk\ \'BEGIN\{dir\=DIR?DIR:ENVIRON\[\"PWD\"\]\;l=split\(dir\,parts\,\"/\"\)\;last=\"\"\;for\(i=1\;i\<l+1\;i++\)\{d=last\"/\"parts\[i\]\;gsub\(\"//\"\,\"/\"\,d\)\;system\(\"stat\ --printf\ \\\"%a\\\t%u\\\t%g\\\t\\\"\ \\\"\"d\"\\\"\;\ echo\ -n\ \\\"\ \\\"\;ls\ -ld\ \\\"\"d\"\\\"\"\)\;last=d\}\}\'";
 
@@ -549,7 +554,7 @@ function PS1_Alerts() {
     local esp_echo_pid=$!;
     local esp_adtempts=20;
     local esp_alert_check_no=0;
-    while [ $( local pid_check=`ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
+    while [ $( local pid_check=`\ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
     do
          sleep 0.05;
          if [ "$esp_alert_check_no" -gt "$esp_adtempts" ];
@@ -616,7 +621,7 @@ fi
 # ESP hook for Post Startup
 # -------------------------
 
-if [ $(declare -Ff esp_hook_post) == "esp_hook_post" ]; then
+if [ "$(declare -Ff esp_hook_post)" == "esp_hook_post" ]; then
     esp_hook_post;
 fi;
 
