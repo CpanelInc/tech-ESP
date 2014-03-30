@@ -298,7 +298,7 @@ function cl() {
 function bkc() { cp -v $@ $@`bktxt`;};
 function bkm() { mv -v $@ $@`bktxt`;};
 
-esp_help_backupp(){
+esp_help_backup(){
     help_section "Backups"
         help_command "bke filename" "Automatically creates a new backup of a file and opens the orignal";
         help_command "bkc filename" "Makes a backup copy of a file with the standard backup text";
@@ -552,7 +552,7 @@ export IP_ADDR=`lsip-real`;
 function PS1_Alerts() {
     (echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql` ) &
     local esp_echo_pid=$!;
-    local esp_adtempts=20;
+    local esp_adtempts=100;
     local esp_alert_check_no=0;
     while [ $( local pid_check=`\ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
     do
