@@ -9,9 +9,8 @@
 # ESP hook for startup
 # --------------------
 
-if [ $(declare -Ff esp_hook_init) == "esp_hook_init" ];
-then 
-    esp_hook_pre;
+if [ "$(declare -Ff esp_hook_pre)" == "esp_hook_pre" ]; then
+  esp_hook_pre;
 fi;
 
 
@@ -622,7 +621,7 @@ fi
 # ESP hook for Post Startup
 # -------------------------
 
-if [ $(declare -Ff esp_hook_post) == "esp_hook_post" ]; then
+if [ "$(declare -Ff esp_hook_post)" == "esp_hook_post" ]; then
     esp_hook_post;
 fi;
 
