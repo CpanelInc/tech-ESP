@@ -198,7 +198,7 @@ function check_apache() {
 function check_exim(){
    if [[ ( -z $esp_check_disable_exim ) && ( -z $esp_check_disable_all ) ]]; then
         # Escape PS and enhance grep to save space
-        \ps aux  grep '/usr/sbin/exi[m]' > /dev/null;
+        \ps aux | grep '/usr/sbin/exi[m]' > /dev/null;
         if [ $? -eq 1 ]; then
             display_critical "Exim is DOWN";
         fi;
