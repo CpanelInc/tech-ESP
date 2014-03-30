@@ -298,7 +298,7 @@ function cl() {
 function bkc() { cp -v $@ $@`bktxt`;};
 function bkm() { mv -v $@ $@`bktxt`;};
 
-esp_help_backupp(){
+esp_help_backup(){
     help_section "Backups"
         help_command "bke filename" "Automatically creates a new backup of a file and opens the orignal";
         help_command "bkc filename" "Makes a backup copy of a file with the standard backup text";
