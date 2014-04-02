@@ -73,7 +73,7 @@ fi;
 export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 
 # Simple Alias to ensure color is not always set to on, that can cause issues with less
-alias grep="/bin/grep --color=auto ";
+alias grep="\grep --color=auto ";
 
 
 # Grab the Ticket number if it exists from the PS1 prompt 
