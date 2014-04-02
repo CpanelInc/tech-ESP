@@ -1,12 +1,7 @@
 ESP ChangeLog
 ============
 
-v0.04
------
-
-* Added Devlopment hooks. pre and post hooks called esp_hook_pre and esp_hook_post
-
-Mar 30, 2014 - v0.03
+Mar 30, 2014 - v0.04
 --------------------
  * case #36: cphelp - fixed typo in code that broke cphelp
  * case #37: Fix perdir which likely broke in 0.02
@@ -15,6 +10,8 @@ Mar 30, 2014 - v0.03
  * case #40: The libkey check has a new url, so update the script to reflect this
  * case #41: Issues were seen on boxes with aliased `ps`, so always use `\ps`
  * case #42: Duplicate of case #41
+ * Added Devlopment hooks. pre and post hooks called esp_hook_pre and esp_hook_post
+
 
 
 Mar 11, 2014 - v0.03
