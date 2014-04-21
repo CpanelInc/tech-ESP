@@ -503,6 +503,8 @@ function esp_help_other() {
         help_command "oddthings" "Shows odd things that are running on odd ports";
         help_command "check_libkey" "Runs automated libkey checks";
         help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
+        help_command "wo" "Alias for /scripts/whoowns";
+        help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms";
 };
 
 
