@@ -75,6 +75,7 @@ export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 # Simple Alias to ensure color is not always set to on, that can cause issues with less
 alias grep="\grep --color=auto ";
 alias wo="/usr/local/cpanel/scripts/whoowns"
+alias ccrpms='/usr/local/cpane/scripts/check_cpanel_rpms'
 
 # Grab the Ticket number if it exists from the PS1 prompt 
   # Dev Note: Don't escape grep since we alias it
