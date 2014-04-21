@@ -42,7 +42,8 @@ if [ -e /var/cpanel/dnsonly ]; then
     export esp_check_disable_apache=1;
     export esp_check_disable_mysql=1;
     export esp_check_disable_mailserver=1;
-    echo "DNSONLY Detected, disabling checks for Backups, Easyapache, Apache, MySQL, Mailserver";
+    export esp_check_disable_exim=1;
+    echo "DNSONLY Detected, disabling checks for Backups, Easyapache, Apache, MySQL, Mailserver, Exim";
 fi;
 
 #
