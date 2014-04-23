@@ -4,9 +4,9 @@
 # Created by Citizen Kepler
 # https://github.com/cPanelTechs/ESP
 
-function esp-version() {
-  echo "ESP v0.0.4";
-}
+#function esp-version() {
+#  echo "ESP v0.0.4";
+#}
 #
 # ESP hook for startup
 # --------------------
