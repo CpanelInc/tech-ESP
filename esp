@@ -606,7 +606,7 @@ cat <<EOF
 Please report this issue to citizen.
 
 Thank you and good luck!
-EOF;
+EOF
          else
               esp_alert_check_no=$(( $esp_alert_check_no + 1));
          fi;
