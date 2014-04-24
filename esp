@@ -4,7 +4,6 @@
 # Created by Citizen Kepler
 # https://github.com/cPanelTechs/ESP
 
-
 #
 # ESP hook for startup
 # --------------------
@@ -75,7 +74,8 @@ export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 
 # Simple Alias to ensure color is not always set to on, that can cause issues with less
 alias grep="\grep --color=auto ";
-
+alias wo="/usr/local/cpanel/scripts/whoowns"
+alias ccrpms='/usr/local/cpane/scripts/check_cpanel_rpms'
 
 # Grab the Ticket number if it exists from the PS1 prompt 
   # Dev Note: Don't escape grep since we alias it
@@ -503,6 +503,9 @@ function esp_help_other() {
         help_command "oddthings" "Shows odd things that are running on odd ports";
         help_command "check_libkey" "Runs automated libkey checks";
         help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
+        help_command "wo" "Alias for /scripts/whoowns";
+        help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms";
+        help_command "esp-version: "Print out the ESP version";
 };
 
 
@@ -603,7 +606,7 @@ cat <<EOF
 Please report this issue to citizen.
 
 Thank you and good luck!
-EOF
+EOF;
          else
               esp_alert_check_no=$(( $esp_alert_check_no + 1));
          fi;
