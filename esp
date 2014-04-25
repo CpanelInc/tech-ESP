@@ -505,7 +505,7 @@ function esp_help_other() {
         help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
         help_command "wo" "Alias for /scripts/whoowns";
         help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms";
-        help_command "esp-version: "Print out the ESP version";
+        help_command "esp-version" "Print out the ESP version";
 };
 
 
