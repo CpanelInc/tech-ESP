@@ -74,8 +74,6 @@ export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 
 # Simple Alias to ensure color is not always set to on, that can cause issues with less
 alias grep="\grep --color=auto ";
-alias wo="/usr/local/cpanel/scripts/whoowns";
-alias ccrpms='/usr/local/cpane/scripts/check_cpanel_rpms';
 
 # Grab the Ticket number if it exists from the PS1 prompt 
   # Dev Note: Don't escape grep since we alias it
@@ -381,16 +379,16 @@ function esp_help_net() {
 # ------------------
 
 alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
+alias acctinfo="esp_script_dl \"acctinfo\" \"http://www.mindslayer.net/cptech/acctinfo\"";
 
-# undocumeted shortcut for marco 
-alias domit="acctinfo";
 
-function acctinfo() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scripts/whoowns $dom); else tmp=$(egrep " $dom$" /etc/trueuserdomains|cut -d: -f1); u=$dom; dom=$tmp;fi; homedir=$(egrep "^$u:" /etc/passwd|cut -d":" -f6); www=$homedir/public_html/ ; echo -e "\n"$dom"\n"$u"\n"$www"\n"; fgrep -i spended /var/cpanel/users/$u; egrep "limit.*1$" /var/cpanel/users/$u; ssl=$homedir/ssl; }
+function acctinfo-marco() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scripts/whoowns $dom); else tmp=$(egrep " $dom$" /etc/trueuserdomains|cut -d: -f1); u=$dom; dom=$tmp;fi; homedir=$(egrep "^$u:" /etc/passwd|cut -d":" -f6); www=$homedir/public_html/ ; echo -e "\n"$dom"\n"$u"\n"$www"\n"; fgrep -i spended /var/cpanel/users/$u; egrep "limit.*1$" /var/cpanel/users/$u; ssl=$homedir/ssl; }
 
 function esp_help_account() {
     help_section "Account Information";
         help_command "accounting_cruft_probe" "Script to locate the remains of an account";
-        help_command "acctinfo" "Gathers basic info for an account";
+	help_command "acctinfo" "Robost Account infomation script, can be run by itself or with an username or domain";
+        help_command "acctinfo-marco" "Marco's Gathers basic info for an account";
 }
 
 #
@@ -487,7 +485,8 @@ function esp_migrations () {
 
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
 alias check_libkey="sh <(curl -s --insecure https://raw.github.com/cPMarco/cpm/master/libkey_check.sh) -v";
-
+alias wo="/usr/local/cpanel/scripts/whoowns";
+alias ccrpms='/usr/local/cpane/scripts/check_cpanel_rpms';
 alias perdir='awk '\''BEGIN{dir=DIR?DIR:ENVIRON["PWD"];l=split(dir,parts,"/");last="";for(i=1;i<l+1;i++){d=last"/"parts[i];gsub("//","/",d);system("stat --printf \"%a\t%u\t%g\t\" \""d"\"; echo -n \" \";ls -ld \""d"\"");last=d}}'\'''
 
 
