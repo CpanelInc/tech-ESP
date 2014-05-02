@@ -284,7 +284,7 @@ function display_info(){
 
 alias last-cpbackup="less \`ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/| head -n 1\`";
 alias bktxt='date +.Backup.%F.%T';
-alias backup-report="curl -s --insecure https://raw.github.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
+alias backup-report="curl -s --insecure https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
 function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vim $@;};
 function cl() {
     \cd $@;
@@ -378,7 +378,7 @@ function esp_help_net() {
 # Account Information 
 # ------------------
 
-alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
+alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.githubusercontent.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
 alias acctinfo="esp_script_dl \"acctinfo\" \"http://www.mindslayer.net/cptech/acctinfo\"";
 
 
@@ -395,7 +395,7 @@ function esp_help_account() {
 # SSL
 # ---
 
-alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
+alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
 alias ssl-verify='openssl x509 -noout -text -in';
 
 function sslshort() { openssl x509 -noout -text -in "$1" | egrep "Issuer|Subject:|^[ ]*Not"; }
@@ -435,7 +435,7 @@ function esp_help_mysql() {
 # PHP & Apache
 # ---
 alias phpinfo="/usr/local/cpanel/bin/rebuild_phpconf --current";
-alias ea-info="curl -s https://raw.github.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
+alias ea-info="curl -s https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
 
 function esp_help_PHP_Apache(){
     help_section "PHP & Apache";
@@ -468,8 +468,8 @@ function esp_help_bash_nav (){
 # Migrations
 # ----------
 
-alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
-alias cpeval2="curl -s --insecure https://raw.github.com/cPanelMigrations/cpeval2/master/cpeval2 | perl";
+alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.githubusercontent.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
+alias cpeval2="curl -s --insecure https://raw.githubusercontent.com/cPanelMigrations/cpeval2/master/cpeval2 | perl";
 alias updateuserdomains-universal="lwp-request http://httpupdate.cpanel.net/cpanelsync/transfers_PUBLIC/pkgacct/ updateuserdomains-universal | perl";
 
 function esp_migrations () {
@@ -484,7 +484,7 @@ function esp_migrations () {
 # --------------------------
 
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
-alias check_libkey="sh <(curl -s --insecure https://raw.github.com/cPMarco/cpm/master/libkey_check.sh) -v";
+alias check_libkey="sh <(curl -s --insecure https://raw.githubusercontent.com/cPMarco/cpm/master/libkey_check.sh) -v";
 alias wo="/usr/local/cpanel/scripts/whoowns";
 alias ccrpms='/usr/local/cpane/scripts/check_cpanel_rpms';
 alias perdir='awk '\''BEGIN{dir=DIR?DIR:ENVIRON["PWD"];l=split(dir,parts,"/");last="";for(i=1;i<l+1;i++){d=last"/"parts[i];gsub("//","/",d);system("stat --printf \"%a\t%u\t%g\t\" \""d"\"; echo -n \" \";ls -ld \""d"\"");last=d}}'\'''
