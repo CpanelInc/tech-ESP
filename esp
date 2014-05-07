@@ -525,7 +525,7 @@ function help_command () {
 # The Actual Help Section 
 #
 function cphelp() {
-    esp_help_backups;
+    esp_help_backup;
     esp_help_sys-info;
     esp_help_net;
     esp_help_account;
