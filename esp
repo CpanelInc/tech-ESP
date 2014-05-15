@@ -282,7 +282,7 @@ function display_info(){
 # Backups 
 # -------
 
-alias last-cpbackup="less \`ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/| head -n 1\`";
+alias last-cpbackup="\less \`\ls -t1 /usr/local/cpanel/logs/cpbackup | \grep -v \/| \head -n 1\`";
 alias bktxt='date +.Backup.%F.%T';
 alias backup-report="curl -s --insecure https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
 function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vim $@;};
@@ -614,8 +614,9 @@ EOF
 export PS1="\n$(tput setaf 7)[$(tput setaf 3)\H$(tput setaf 7)|$(tput setaf 3)$IP_ADDR$(tput setaf 7)] $(tput setaf 6)Alerts: \`PS1_Alerts\`\n$(tput setaf 7)[$(tput setaf 3)$TICKET$(tput setaf 7)]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
 
 save_connected;
+
 if [ "$ssp" == "1" ]; then
-    curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
+    \curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
 fi
 
 
