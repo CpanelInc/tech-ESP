@@ -1,12 +1,26 @@
 ESP ChangeLog
 ============
 
+May 19, 2014 - v.0.05
+---------------------
+ * Added Peters acctinfo script
+ * Renamed previous acctinfo script to acctinfo-marco
+ * Created wo alias for  whoowns
+ * Created ccrpms alias for check_cpanel_rpms
+ * Added script CSI
+ * Fixed and added back backup help section bug.
+ * Updated methiod used to call ESP to use raw.githubusercontent.com
+ * Updated scripts that used raw.github.com to raw.githubusercontent.com
+ * Added Exim to the list of disabled checks for DNSOnly 
+
+
+
 Mar 30, 2014 - v0.04
 --------------------
  * case #36: cphelp - fixed typo in code that broke cphelp
  * case #37: Fix perdir which likely broke in 0.02
  * case #38: Increase the alertcheck timeout to 100
- * case #39: Won't implement at this time
+ * case #39: Wont implement at this time
  * case #40: The libkey check has a new url, so update the script to reflect this
  * case #41: Issues were seen on boxes with aliased `ps`, so always use `\ps`
  * case #42: Duplicate of case #41
