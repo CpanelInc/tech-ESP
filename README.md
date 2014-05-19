@@ -11,7 +11,7 @@ Usage
 
 To use esp run the following command on Centos 5 or 6:
 
-    # source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+    # source /dev/stdin <<< "$(curl -sL https://raw.githubusercontent.com/cPanelTechs/ESP/master/esp)"
 
 Special Thanks to Jerald Jonson for initially coding and hacking out the centos 5 bugs in the above source command that makes this tool possible, and his contributions to the ESP script itself.
 
@@ -22,7 +22,7 @@ Configuration options in ESP are bash envirmentals declared before the source co
 
 Example:
 
-    # ssp=1 source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+    # ssp=1 source /dev/stdin <<< "$(curl -sL https://raw.githubusercontent.com/cPanelTechs/ESP/master/esp)"
 
 ### SSP 
 
@@ -125,7 +125,7 @@ An example usage of an pre hook could be to read esp configuration options from 
 
 Now you can run esp and esp will detect the hook and load ~/.esprc if it exists.  Addtionaly you can combine the function, with configuration options and the esp command for an (admitdly large) one liner. 
 
-    esp_check_disable_mysql=1 function esp_hook_pre { [ -f ~/.esprc ] && source ~/.esprc;}; source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+    esp_check_disable_mysql=1 function esp_hook_pre { [ -f ~/.esprc ] && source ~/.esprc;}; source /dev/stdin <<< "$(curl -sL https://raw.githubusercontent.com/cPanelTechs/ESP/master/esp)"
 
 ### Post-ESP hook 
 
@@ -141,7 +141,7 @@ An example of an ESP post hook is to modify the PS1 var.  Like the pre hook we w
 
 Like the pre hook you can place the function before the esp command for an one liner:
 
-    function esp_hook_post { export PS1="$PS1 >>>"; }; source /dev/stdin <<< "$(curl -sL https://raw.github.com/cPanelTechs/ESP/master/esp)"
+    function esp_hook_post { export PS1="$PS1 >>>"; }; source /dev/stdin <<< "$(curl -sL https://raw.githubusercontent.com/cPanelTechs/ESP/master/esp)"
 
 
 Credits

@@ -4,7 +4,6 @@
 # Created by Citizen Kepler
 # https://github.com/cPanelTechs/ESP
 
-
 #
 # ESP hook for startup
 # --------------------
@@ -42,7 +41,8 @@ if [ -e /var/cpanel/dnsonly ]; then
     export esp_check_disable_apache=1;
     export esp_check_disable_mysql=1;
     export esp_check_disable_mailserver=1;
-    echo "DNSONLY Detected, disabling checks for Backups, Easyapache, Apache, MySQL, Mailserver";
+    export esp_check_disable_exim=1;
+    echo "DNSONLY Detected, disabling checks for Backups, Easyapache, Apache, MySQL, Mailserver, Exim";
 fi;
 
 #
@@ -74,7 +74,6 @@ export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 
 # Simple Alias to ensure color is not always set to on, that can cause issues with less
 alias grep="\grep --color=auto ";
-
 
 # Grab the Ticket number if it exists from the PS1 prompt 
   # Dev Note: Don't escape grep since we alias it
@@ -283,9 +282,9 @@ function display_info(){
 # Backups 
 # -------
 
-alias last-cpbackup="less \`ls -t1 /usr/local/cpanel/logs/cpbackup | grep -v \/| head -n 1\`";
+alias last-cpbackup="\less \`\ls -t1 /usr/local/cpanel/logs/cpbackup | \grep -v \/| \head -n 1\`";
 alias bktxt='date +.Backup.%F.%T';
-alias backup-report="curl -s --insecure https://raw.github.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
+alias backup-report="curl -s --insecure https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
 function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vim $@;};
 function cl() {
     \cd $@;
@@ -379,24 +378,24 @@ function esp_help_net() {
 # Account Information 
 # ------------------
 
-alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.github.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
+alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.githubusercontent.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
+alias acctinfo="esp_script_dl \"acctinfo\" \"http://www.mindslayer.net/cptech/acctinfo\"";
 
-# undocumeted shortcut for marco 
-alias domit="acctinfo";
 
-function acctinfo() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scripts/whoowns $dom); else tmp=$(egrep " $dom$" /etc/trueuserdomains|cut -d: -f1); u=$dom; dom=$tmp;fi; homedir=$(egrep "^$u:" /etc/passwd|cut -d":" -f6); www=$homedir/public_html/ ; echo -e "\n"$dom"\n"$u"\n"$www"\n"; fgrep -i spended /var/cpanel/users/$u; egrep "limit.*1$" /var/cpanel/users/$u; ssl=$homedir/ssl; }
+function acctinfo-marco() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scripts/whoowns $dom); else tmp=$(egrep " $dom$" /etc/trueuserdomains|cut -d: -f1); u=$dom; dom=$tmp;fi; homedir=$(egrep "^$u:" /etc/passwd|cut -d":" -f6); www=$homedir/public_html/ ; echo -e "\n"$dom"\n"$u"\n"$www"\n"; fgrep -i spended /var/cpanel/users/$u; egrep "limit.*1$" /var/cpanel/users/$u; ssl=$homedir/ssl; }
 
 function esp_help_account() {
     help_section "Account Information";
         help_command "accounting_cruft_probe" "Script to locate the remains of an account";
-        help_command "acctinfo" "Gathers basic info for an account";
+	help_command "acctinfo" "Robost Account infomation script, can be run by itself or with an username or domain";
+        help_command "acctinfo-marco" "Marco's Gathers basic info for an account";
 }
 
 #
 # SSL
 # ---
 
-alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.github.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
+alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
 alias ssl-verify='openssl x509 -noout -text -in';
 
 function sslshort() { openssl x509 -noout -text -in "$1" | egrep "Issuer|Subject:|^[ ]*Not"; }
@@ -436,7 +435,7 @@ function esp_help_mysql() {
 # PHP & Apache
 # ---
 alias phpinfo="/usr/local/cpanel/bin/rebuild_phpconf --current";
-alias ea-info="curl -s https://raw.github.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
+alias ea-info="curl -s https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
 
 function esp_help_PHP_Apache(){
     help_section "PHP & Apache";
@@ -469,8 +468,8 @@ function esp_help_bash_nav (){
 # Migrations
 # ----------
 
-alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.github.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
-alias cpeval2="curl -s --insecure https://raw.github.com/cPanelMigrations/cpeval2/master/cpeval2 | perl";
+alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.githubusercontent.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
+alias cpeval2="curl -s --insecure https://raw.githubusercontent.com/cPanelMigrations/cpeval2/master/cpeval2 | perl";
 alias updateuserdomains-universal="lwp-request http://httpupdate.cpanel.net/cpanelsync/transfers_PUBLIC/pkgacct/ updateuserdomains-universal | perl";
 
 function esp_migrations () {
@@ -485,10 +484,11 @@ function esp_migrations () {
 # --------------------------
 
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
-alias check_libkey="sh <(curl -s --insecure https://raw.github.com/cPMarco/cpm/master/libkey_check.sh) -v";
-
+alias check_libkey="sh <(curl -s --insecure https://raw.githubusercontent.com/cPMarco/cpm/master/libkey_check.sh) -v";
+alias wo="/usr/local/cpanel/scripts/whoowns";
+alias ccrpms='/usr/local/cpane/scripts/check_cpanel_rpms';
 alias perdir='awk '\''BEGIN{dir=DIR?DIR:ENVIRON["PWD"];l=split(dir,parts,"/");last="";for(i=1;i<l+1;i++){d=last"/"parts[i];gsub("//","/",d);system("stat --printf \"%a\t%u\t%g\t\" \""d"\"; echo -n \" \";ls -ld \""d"\"");last=d}}'\'''
-
+alias csi="esp_script_dl \"csi.pl\" \"http://csi.cptechs.info/csi.pl\"";
 
 function oddthings () {
     echo  "$(tput bold)odd things$(tput sgr0)";
@@ -502,8 +502,10 @@ function esp_help_other() {
         help_command "oddthings" "Shows odd things that are running on odd ports";
         help_command "check_libkey" "Runs automated libkey checks";
         help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
-};
-
+        help_command "wo" "Alias for /scripts/whoowns";
+        help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms";
+	help_command "csi" " Runs CSI";
+}
 
 #
 # Functions to assist with displaying the help section
@@ -522,7 +524,7 @@ function help_command () {
 # The Actual Help Section 
 #
 function cphelp() {
-    esp_help_backups;
+    esp_help_backup;
     esp_help_sys-info;
     esp_help_net;
     esp_help_account;
@@ -612,8 +614,9 @@ EOF
 export PS1="\n$(tput setaf 7)[$(tput setaf 3)\H$(tput setaf 7)|$(tput setaf 3)$IP_ADDR$(tput setaf 7)] $(tput setaf 6)Alerts: \`PS1_Alerts\`\n$(tput setaf 7)[$(tput setaf 3)$TICKET$(tput setaf 7)]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
 
 save_connected;
+
 if [ "$ssp" == "1" ]; then
-    curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
+    \curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
 fi
 
 
