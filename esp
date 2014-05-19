@@ -628,4 +628,7 @@ if [ "$(declare -Ff esp_hook_post)" == "esp_hook_post" ]; then
     esp_hook_post;
 fi;
 
-echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.$(tput sgr0)";
+echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.";
+echo;echo "NOTICE:  If ESP is failing on some servers, update the url from raw.github.com to raw.githubusercontent.com";
+echo;echo '     source /dev/stdin <<< "$(curl -sL https://raw.githubusercontent.com/cPanelTechs/ESP/master/esp)"';
+echo "$(tput sgr0)";
