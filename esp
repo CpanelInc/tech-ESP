@@ -387,7 +387,7 @@ function acctinfo-marco() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scrip
 function esp_help_account() {
     help_section "Account Information";
         help_command "accounting_cruft_probe" "Script to locate the remains of an account";
-	help_command "acctinfo" "Robost Account infomation script, can be run by itself or with an username or domain";
+	help_command "acctinfo" "Robust Account information script, Args: username/domain --listdbs --listssls q (quiet)";
         help_command "acctinfo-marco" "Marco's Gathers basic info for an account";
 }
 
