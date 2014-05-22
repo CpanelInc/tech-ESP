@@ -1,6 +1,10 @@
 ESP ChangeLog
 ============
 
+May 22, 2014
+------------
+ * Fixed ccprpms command.
+
 May 19, 2014 - v.0.05
 ---------------------
  * Added Peters acctinfo script
