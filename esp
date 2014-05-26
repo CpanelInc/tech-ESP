@@ -483,6 +483,37 @@ function esp_migrations () {
 # Other and Special Commands
 # --------------------------
 
+
+function rpmdbfix () {
+   local cur_time_stamp="`date +%F.%T`";
+   local backupdir="/root/cptechs/backups/rpmdb-$cur_time_stamp";
+   echo "Backing up old rpm database";
+   mkdir -vp $backupdir;
+   tar zcf $backupdir/rpmdb.tar.gz /var/lib/rpm;
+
+   if [[ $? -ne 0 ]]; then
+       echo "Tarball backup of existing rpm database failed.  Exiting.";
+       exit -1;
+   fi
+
+   mv -v /var/lib/rpm/__db* $backupdir;  
+   if [[ $? -ne 0 ]]; then
+        echo "Failure Moving Aside old Database";
+   fi
+
+   /usr/lib/rpm/rpmdb_verify /var/lib/rpm/Packages
+   if [[ $? -ne 0 ]]; then
+       echo "RPM Package fail, repairing....";
+       mv -v {/usr/lib/rpm/,$backupdir}Packages;
+       /usr/lib/rpm/rpmdb_dump $backupdir/Packages | /usr/lib/rpm/rpmdb_load /var/lib/rpm/Packages;
+      /usr/lib/rpm/rpmdb_verify /var/lib/rpm/Packages;
+   fi
+
+rpm -qa 1> /dev/null
+rpm --rebuilddb;
+}
+
+
 alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
 alias check_libkey="sh <(curl -s --insecure https://raw.githubusercontent.com/cPMarco/cpm/master/libkey_check.sh) -v";
 alias wo="/usr/local/cpanel/scripts/whoowns";
@@ -505,7 +536,20 @@ function esp_help_other() {
         help_command "wo" "Alias for /scripts/whoowns";
         help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms";
 	help_command "csi" " Runs CSI";
+	help_command "rpmdbfix" "Safly backups and repairs the rpm database";
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 #
 # Functions to assist with displaying the help section
