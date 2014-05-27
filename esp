@@ -520,6 +520,7 @@ alias wo="/usr/local/cpanel/scripts/whoowns";
 alias ccrpms='/usr/local/cpanel/scripts/check_cpanel_rpms';
 alias perdir='awk '\''BEGIN{dir=DIR?DIR:ENVIRON["PWD"];l=split(dir,parts,"/");last="";for(i=1;i<l+1;i++){d=last"/"parts[i];gsub("//","/",d);system("stat --printf \"%a\t%u\t%g\t\" \""d"\"; echo -n \" \";ls -ld \""d"\"");last=d}}'\'''
 alias csi="esp_script_dl \"csi.pl\" \"http://csi.cptechs.info/csi.pl\"";
+alias hostname-history="grep -A 999 sub_domains /var/cpanel/userdata/nobody/main | grep -v sub_domains| awk '{{print $2}}'";
 
 function oddthings () {
     echo  "$(tput bold)odd things$(tput sgr0)";
@@ -537,6 +538,7 @@ function esp_help_other() {
         help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms";
 	help_command "csi" " Runs CSI";
 	help_command "rpmdbfix" "Safly backups and repairs the rpm database";
+	help_command "hostname-history" "Returns all of the hostnames used by the server ";
 }
 
 
