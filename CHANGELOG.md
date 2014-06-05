@@ -1,6 +1,11 @@
 ESP ChangeLog
 ============
 
+June 04, 2014 - v0.06
+------------
+* Added Virtfs functions. - Geoff Stephens
+
+
 May 22, 2014
 ------------
  * Fixed ccprpms command.
