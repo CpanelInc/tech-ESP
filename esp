@@ -527,6 +527,25 @@ function oddthings () {
     lsof -Pni |grep -vE ':80|:443|imap|pop3|named|cpdavd|courier|dovecot|exim|mysql|pure|pro|sshd|cpsrvd|spamd|ntpd';
 };
 
+function virtfs_mounts() {
+        local USER=$1;
+        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_virtfs_mounts(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }';
+};
+
+function virtfs_exim_deps() {
+        local USER=$1;
+        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_exim_deps(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }';
+};
+
+function virtfs_mount_points() {
+        local USER=$1;
+        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_virtfs_mount_points(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }'
+};
+
+function virtfs_jailshell_path() {
+        local USER=$1;
+        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_jailshell_path(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }'
+};
 
 function esp_help_other() {
     help_section "Other and Special Commands";
@@ -541,6 +560,18 @@ function esp_help_other() {
 	help_command "rpmdbfix" "Safly backups and repairs the rpm database";
 	help_command "hostname-history" "Returns all of the hostnames used by the server ";
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 #
 # Functions to assist with displaying the help section
