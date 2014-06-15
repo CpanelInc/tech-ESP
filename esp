@@ -527,6 +527,7 @@ function oddthings () {
     lsof -Pni |grep -vE ':80|:443|imap|pop3|named|cpdavd|courier|dovecot|exim|mysql|pure|pro|sshd|cpsrvd|spamd|ntpd';
 };
 
+
 function esp_help_other() {
     help_section "Other and Special Commands";
         help_command "save_connected" "saves out the current ssh logins and dismisses the ssh login alert";
@@ -540,18 +541,6 @@ function esp_help_other() {
 	help_command "rpmdbfix" "Safly backups and repairs the rpm database";
 	help_command "hostname-history" "Returns all of the hostnames used by the server ";
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 #
 # Functions to assist with displaying the help section
