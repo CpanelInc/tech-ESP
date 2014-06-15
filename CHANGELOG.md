@@ -1,6 +1,13 @@
 ESP ChangeLog
 ============
 
+June 15, 2014 - 0.06
+--------------------
+ * Fixed Spelling
+ * Added command to repair rpm databases
+ * Added command to list hostname history
+
+
 May 22, 2014
 ------------
  * Fixed ccprpms command.
