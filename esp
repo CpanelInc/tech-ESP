@@ -358,7 +358,7 @@ function esp_fcdns_check() {
        local rdns_ip="`dig @4.2.2.2 +time=1 +short -x $ip_to_check | xargs dig +short `";
    fi
    if [ "$ip_to_check" = "$rdns_ip" ]; then
-       echo "$(tput setaf 3)$ip_to_check$(tput setaf 2) PASSED FCrDNS valadation $(tput sgr0)$ip_to_check$(tput setaf 3)->$(tput sgr0)$rdns$(tput setaf 3)->$(tput sgr0)$rdns_ip";
+       echo "$(tput setaf 3)$ip_to_check$(tput setaf 2) PASSED FCrDNS validation $(tput sgr0)$ip_to_check$(tput setaf 3)->$(tput sgr0)$rdns$(tput setaf 3)->$(tput sgr0)$rdns_ip";
    else
        echo "$(tput setaf 3)$ip_to_check$(tput setaf 1) FAILED FCrDNS validation $(tput sgr0)$ip_to_check$(tput setaf 3)->$(tput sgr0)$rdns$(tput setaf 3)->$(tput sgr0)$rdns_ip";
    fi
