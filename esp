@@ -312,8 +312,8 @@ esp_help_backup(){
 # ------------------
 
 alias server-type="strings /var/cpanel/envtype";
-alias sys-snap-install="cd /root; wget http://cptechs.info/system-snapshot/sys-snap.sh;chmod +x sys-snap.sh;nohup sh sys-snap.sh &";
-alias sys-snap-start="cd /root;nohup sh sys-snap.sh &";
+alias sys-snap-install="cd /root; wget https://raw.githubusercontent.com/cPanelTechs/SysSnap/master/sys-snap.pl ;nohup perl sys-snap.pl &";
+alias sys-snap-start="cd /root;nohup perl sys-snap.pl &";
 alias cpu-count="grep proc /proc/cpuinfo |wc -l" ;
 alias cpu-info="grep model\ name /proc/cpuinfo | sed s/model\ name//g | uniq -c" ;
 
