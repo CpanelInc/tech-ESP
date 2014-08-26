@@ -11,7 +11,7 @@ Usage
 
 To use esp run the following command on Centos 5 or 6:
 
-    # source /dev/stdin <<< "$(curl -sLhttps://raw.githubusercontent.com/chrisice/ESP/master/esp)"
+    # source /dev/stdin <<< "$(curl -sL https://raw.githubusercontent.com/chrisice/ESP/master/esp)"
 
 Special Thanks to Jerald Jonson for initially coding and hacking out the centos 5 bugs in the above source command that makes this tool possible, and his contributions to the ESP script itself.
 
