@@ -1,17 +1,181 @@
 #!/bin/bash
+# shellcheck shell=sh
 
 # ESP - Enhanced Shell Prompt
 # Created by Citizen Kepler
+# Maintained by Terrance Robotham
 # https://github.com/cPanelTechs/ESP
+# vim: ts=4 sw=4 syn=sh et
+
+# Shellcheck Global POSIX ignores
+# shellcheck disable=SC2039,SC2112,SC2113
+
+# ESP Version
+readonly VERSION='2.0.0'
+
+# Colors
+readonly END=$(tput sgr0)
+readonly BOLD=$(tput bold)
+readonly RED=$(tput setaf 1)
+readonly GREEN=$(tput setaf 2)
+readonly YELLOW=$(tput setaf 3)
+readonly BLUE=$(tput setaf 4)
+readonly MAGENTA=$(tput setaf 5)
+readonly CYAN=$(tput setaf 6)
+readonly WHITE=$(tput setaf 7)
+
+# Set display_ functions
+function display_critical(){
+	echo -ne "${RED}${BOLD}$1${END}"
+}
+
+#
+# Display Alert Levels
+# --------------------
+
+# Graveyard!
+function die() {
+	display_critical "[FATAL] $1"
+}
+
+# Pre-flight check for ESP
+if [[ $UID != 0 ]]; then
+	die "ESP *MUST* be run as root!"
+	return
+fi
+
+#
+# Pre-flight check for cpanel
+#
+
+if [ ! -d /var/cpanel ]; then
+	echo "${YELLOW} .: WARNING WARNING WARNING :."
+	echo "==============================="
+	echo "cPanel has not been detected.  This script has only been tested on cPanel"
+	echo "Please Ctrl-C out of this script in the next 10 seconds otherwise it will run"
+	for time in {10..0}; do
+		echo "Proceeding in $time."
+		sleep 1
+	done
+	echo "Forward March! ${END}"
+fi
+
+# Set tech name or fall back to cptech if none specified
+export TECH="${TECH:-cptech}"
+
+# Set other defaults
+export STRACESTRLEN="${STRACESTRLEN:-8192}"
+
+# Grab the Ticket number if it exists from the PS1 prompt
+# Dev Note: Don't escape grep since we alias it
+# shellcheck disable=SC1001
+if [ "$(echo "${PS1}" | \grep -c "cPs#")" -ge 1 ]; then
+	readonly TICKET=$(echo "${PS1}" | awk '{{print $3}}'| cut -d \@ -f 2)
+else
+	readonly TICKET=$(whoami)
+fi
+
+cptechdir=/root/cptechs/${TECH}/${TICKET}
+
+# Create ${cptechdir}
+mkdir -p "${cptechdir}"
+
+# Find our TTY so that $cptechdir can be cleaned up later (likely after exit)
+#auto_clean=1
+owner_tty="$(tty | grep '^/' || echo "$SSH_TTY")"
+if [[ ! "$owner_tty" ]] # Detect TTY in chrooted environments when piping
+then
+	owner_tty="$(lsof /dev/{pts/,tty}* | awk "\$2 == $$ {print \$9; exit}")"
+fi
+
+# Generate session variables
+if [[ -e "$owner_tty" ]]; then
+	tty_ctime="$(stat --printf=%Z  "$owner_tty")"
+	session_name="$(basename "$owner_tty")-$tty_ctime"
+	session_dir="$cptechdir/esp-$session_name"
+	#	#session_log="$session_dir/session.$session_name"
+	#	#esp_pid_file="$session_dir/esp.$session_name"
+else
+	tty_ctime="Not a TTY"
+	session_name="$(basename "$owner_tty")-$tty_ctime"
+	session_dir="$cptechdir/esp-$session_name"
+	#	#session_log=''
+	#	#auto_clean=0
+	#	die "Not a TTY - ESP Disabled!"
+	#	return
+fi
+
+# Create a working directory for this session.
+if [[ ! -d $session_dir ]]; then
+	echo "Creating working dir..."
+	mkdir -p "${session_dir}"
+	# Commented until cleanup is created
+	#echo "[Session Start] $(date)" >> "${session_dir}"/session_active
+fi
+
+## DO NOT TOUCH ANYTHING BEFORE THIS LINE ##
+
+#
+# Initial Setup
+# -------------
+#
+
+# Remove Aliases
+unalias -a
+
+# Reset pacha defaults
+alias rm='echo "Are you sure you want to remove files? If so use /bin/rm"'
+
+# Set tech name or fall back to cptech if none specified
+export TECH="${TECH:-cptech}"
+
+# Remove env vars that we care about
+unset VIMINIT
+unset EXINIT
+unset PROMPT_COMMAND
+
+# VIM: Forward March!
+export VIMINIT="${esp_custom_vim:-:set syntax=on}"
+
+# PS1 ONLY
+function ps_display_critical() {
+	echo -ne "${RED}${BOLD}$1${END}, "
+}
+
+function ps_display_warn() {
+	echo -ne "${YELLOW}$1${END}, "
+}
+
+function ps_display_info() {
+	echo -ne "${CYAN}$1${END}, "
+}
+
+
+alias ls="ls --color=auto"
+alias ll="ls -lah --color"
+alias showip2089="curl -s http://myip.cpanel.net:2089/v1.0/ ; echo"
+alias whmapi1listapps="grep -h '^sub [a-z]' /usr/local/cpanel/Whostmgr/API/1/*.pm | sed -e 's/{//g' -e 's/sub //g' | sort"
+alias dcvcheck='echo | curl --user-agent "COMODO DCV" --insecure --max-time 10 --retry 0 --cipher RC4:ALL:\!EXPORT:\!EXPORT40:\!EXPORT56:\!aNULL:\!LOW:@STRENGTH '
+
+function forceremove() {
+	local FILE
+	FILE=$*
+	/bin/rm -f "${FILE}"
+}
+
+function forcerecursiveremove() {
+	local FILE
+	FILE=$*
+	/bin/rm -fr "${FILE}"
+}
 
 #
 # ESP hook for startup
 # --------------------
 
 if [ "$(declare -Ff esp_hook_pre)" == "esp_hook_pre" ]; then
-  esp_hook_pre;
-fi;
-
+	esp_hook_pre
+fi
 
 
 #
@@ -19,31 +183,51 @@ fi;
 #
 
 if [ ! -d /var/cpanel ]; then
-    echo "$(tput setaf 3) .: WARNING WARNING WARNING :.";
-    echo "===============================";
-    echo "cPanel has not been detected.  This script has only been tested on cPanel"
-    echo "Please Ctrl-C out of this script in the next 10 seconds otherwise it will run";
-    for time in {10..0}; do
-         echo "Proceading in $time.";
-	sleep 1;
-    done;
-    echo "Foward March! $(tput sgr0)";
-fi;
+	echo "${YELLOW} .: WARNING WARNING WARNING :."
+	echo "==============================="
+	echo "cPanel has not been detected.  This script has only been tested on cPanel"
+	echo "Please Ctrl-C out of this script in the next 10 seconds otherwise it will run"
+	for time in {10..0}; do
+		echo "Proceeding in $time."
+		sleep 1
+	done
+	echo "Forward March! ${END}"
+fi
 
 #
 # DNS Only Check
 # --------------
 
 if [ -e /var/cpanel/dnsonly ]; then
-    export OS="DNSONLY";
-    export esp_check_disable_backup=1;
-    export esp_check_disable_easyapache=1;
-    export esp_check_disable_apache=1;
-    export esp_check_disable_mysql=1;
-    export esp_check_disable_mailserver=1;
-    export esp_check_disable_exim=1;
-    echo "DNSONLY Detected, disabling checks for Backups, Easyapache, Apache, MySQL, Mailserver, Exim";
-fi;
+	export OS="DNSONLY"
+	export esp_check_disable_backup=1
+	export esp_check_disable_easyapache=1
+	export esp_check_disable_apache=1
+	export esp_check_disable_mysql=1
+	export esp_check_disable_mailserver=1
+	export esp_check_disable_exim=1
+	echo "DNSONLY Detected, disabling checks for backups, EasyApache, Apache, MySQL, Mailserver, Exim"
+fi
+
+#
+# Disabled Services Check
+#
+
+if [[ -e /etc/httpddisable || -e /etc/httpdisable || -e /etc/httpdisevil || -e /etc/apachedisable ]]; then
+	export esp_check_disable_apache=1
+	ps_display_warn "httpd-disable touchfile detected, disabling checks for Apache."
+fi
+
+if [[ -e /etc/cpimapdisable || -e /etc/imapdisable || -e /etc/imapddisable ]]; then
+	export esp_check_disable_mailserver=1
+	ps_display_warn "mailserver-disable touchfile detected, disabling checks for Courier/Dovecot."
+fi
+
+# Check if Exim is disabled
+if [ -e /etc/eximdisable ]; then
+	export esp_check_disable_exim=1
+	ps_display_warn "smtp-disable touchfile detected, disabling checks for Exim."
+fi
 
 #
 # Initial Setup
@@ -51,177 +235,248 @@ fi;
 #
 
 # DL_SCRIPTS is the directory where downloaded scripts will be stored
-export DL_SCRIPTS="/root/cptechs/scripts/";
+export DL_SCRIPTS="/root/cptechs/${TECH}/scripts"
 
 #
 # Editor detection
 # ----------------
 
-# This check is to set vim as the editor if avalable reverting back to 
+# This check is to set vim as the editor if avalable reverting back to
 # vi if vim is not avalable. Also sets an alias for vim to vi if vim
 # is not avalable.    Related Issue [#22]
-if [ -f /usr/bin/vim ]; then 
-    export EDITOR="vim";
-    export VISUAL="vim";
+if [ -f /usr/bin/vim ]; then
+	export EDITOR="vim"
+	export VISUAL="vim"
 else
-    export EDITOR="vi";
-    export VISUAL="vi";
-    alias "vim"="vi";
-fi;
+	export EDITOR="vi"
+	export VISUAL="vi"
+	alias vim="vi"
+fi
 
 # Include cPanel paths in $PATH
 export PATH=$PATH:/usr/local/cpanel/scripts/:/usr/local/cpanel/bin/
 
 # Simple Alias to ensure color is not always set to on, that can cause issues with less
-alias grep="\grep --color=auto ";
-
-# Grab the Ticket number if it exists from the PS1 prompt 
-  # Dev Note: Don't escape grep since we alias it
-if [ `echo $PS1 | grep "cPs#"| \wc -l` -ge 1 ]; then
-    export TICKET=`echo $PS1 | \awk '{{print $3}}'| \cut -d \@ -f 2`;
-else
-    export TICKET="n/a";
-fi;
-
+alias grep="grep --color=auto "
 
 #
 # CL on my default
 # ----------------
 
+# shellcheck disable=SC2154
 if [ -z "$esp_cl_disable" ]; then
-    alias cd="cl";
-    [ -z "$esp_cl_maxfiles" ] && export esp_cl_maxfiles=150;
-    [ -n "$esp_debug" ] && \echo "Enabled CL for CD";
-fi;
+	alias cd="cl"
+	[ -z "$esp_cl_maxfiles" ] && export esp_cl_maxfiles=150;
+	[ -n "$esp_debug" ] && echo "Enabled CL for CD";
+fi
 
+#
+# URL Encoding and Decoding
+# -------------------------
 
+# urlencode <string>
+function urlencode() {
+	old_lc_collate=$LC_COLLATE
+	LC_COLLATE=C
+	local length="${#1}"
+	for (( i = 0; i < length; i++ )); do
+		local c="${1:i:1}"
+		case $c in
+			[a-zA-Z0-9.~_-]) printf "%s" "${c}";;
+			*) printf '%%%02X' "'$c" ;;
+		esac
+	done
+	LC_COLLATE=$old_lc_collate
+}
+
+# urldecode <string>
+function urldecode() {
+	local url_encoded="${1//+/ }"
+	printf '%b' "${url_encoded//%/\\x}"
+}
 
 #
 # Script Downloader
 # ----------------
 
-
 function esp_script_dl(){
-   local SCRIPT="$1";
-   local URL="$2"
-   shift 2;
-   if [ -e $DL_SCRIPTS/$SCRIPT ]
-       then
-           $DL_SCRIPTS/$SCRIPT $@;
-   else
-       \echo -ne "$(tput setaf 3)Script not yet downloaded, downloading...";
-       \mkdir -p $DL_SCRIPTS;
-       \wget --quiet -P $DL_SCRIPTS $URL;
-       \chmod u+x $DL_SCRIPTS/$SCRIPT;
-       \echo " Complete$(tput sgr0)";
-       $DL_SCRIPTS/$SCRIPT $@;
-   fi
+	local SCRIPT="$1"
+	local URL="$2"
+	shift 2
+	if [ -e "${DL_SCRIPTS}"/"${SCRIPT}" ]
+	then
+		"${DL_SCRIPTS}"/"${SCRIPT}" "$@"
+	else
+		echo -ne "${YELLOW}Script not yet downloaded, downloading...${END}"
+		mkdir -p "${DL_SCRIPTS}"
+		wget --quiet -P "${DL_SCRIPTS}" "${URL}"
+		chmod u+x "${DL_SCRIPTS}"/"${SCRIPT}"
+		echo " ${YELLOW}Complete${END}"
+		"${DL_SCRIPTS}"/"${SCRIPT}" "$@"
+	fi
 }
 
-
-
 #
-# PS1 Checks 
+# PS1 Checks
 # ----------
 #
-# These functions below will be used in the Alerts line in the PS1 
+# These functions below will be used in the Alerts line in the PS1
 #
-
 
 # This function will check for upcp in the process list,
 #  displaying an alert if found.
-
 function check_upcp () {
-   if [[ ( -z $esp_check_disable_upcp ) && ( -z $esp_check_disable_all ) ]]; then
-       # Escape PS and enhace the grep to save space
-       \ps auxf | egrep '([c]Panel Update|[u]pcp)' > /dev/null;
-       if [ $? -eq 0 ]; then
-           display_info "upcp";
-       fi;
-   fi;
-}; 
-
+	# shellcheck disable=SC2154
+	if [[ ( -z $esp_check_disable_upcp ) && ( -z $esp_check_disable_all ) ]]; then
+		if pgrep -f '([c]Panel Update|[u]pcp)' > /dev/null; then
+			ps_display_info "upcp"
+		fi
+	fi
+}
 
 # Check for yum Lock
 
 function check_yum () {
-   if [[ ( -z $esp_check_disable_yum ) && ( -z $esp_check_disable_all ) ]]; then
-    if [ -f /var/run/yum.pid ]; then
-        \ps -eo pid | grep `cat /var/run/yum.pid`>/dev/null
-        if [ $? -eq 0 ]; then
-            display_warn "yum";
-        else
-            display_critical "Stale yum lock";
-        fi;
-    fi;
-fi;
-};
-
+	# shellcheck disable=SC2154
+	if [[ ( -z $esp_check_disable_yum ) && ( -z $esp_check_disable_all ) ]]; then
+		if [ -f /var/run/yum.pid ]; then
+			if pgrep -F /var/run/yum.pid >/dev/null; then
+				ps_display_warn "yum"
+			else
+				ps_display_critical "Stale yum lock"
+			fi
+		fi
+	fi
+}
 
 # Check to see if backups are found in the process list
 
 function check_backups () {
-   if [[ ( -z $esp_check_disable_backup ) && ( -z $esp_check_disable_all ) ]]; then
-    # Escape PS and enhance grep to save issues
-    \ps auxf|grep [c]pbackup > /dev/null;
-    if [ $? -eq 0 ]; then
-        display_warn "Backup (check for false positve)";
-    fi;
-fi;
-}; 
+	if [[ ( -z $esp_check_disable_backup ) && ( -z $esp_check_disable_all ) ]]; then
+		if pgrep -f "/usr/local/cpanel/bin/backup|[c]pbackup" >/dev/null; then
+			ps_display_warn "Backup (check for false positive)"
+		fi
+	fi
+}
 
 # Check to see if easyapache is found in the process list
 function check_easyapache () {
-   if [[ ( -z $esp_check_disable_easyapache ) && ( -z $esp_check_disable_all ) ]]; then
-    if [ -f /usr/local/apache/AN_EASYAPACHE_BUILD_IS_CURRENTLY_RUNNING ]; then
-        # Escape PS and enhance grep to save space
-        \ps auxf | grep [e]asyapache  > /dev/null;
-        if [ $? -eq 0 ]; then
-            display_warn "easyapache";
-        fi;
-    fi;
-fi;
-};
+	local earun="easyapache"
+	if [[ ( -z $esp_check_disable_easyapache ) && ( -z $esp_check_disable_all ) ]]; then
+		if [ -f /usr/local/apache/AN_EASYAPACHE_BUILD_IS_CURRENTLY_RUNNING ]; then
+			if pgrep -f "[e]asyapache" >/dev/null; then
+				ps_display_warn "${earun}"
+			fi
+		fi
+	fi
+}
 
 # This check will verify if apache is up and the server status page is found
 function check_apache() {
-   if [[ ( -z $esp_check_disable_apache ) && ( -z $esp_check_disable_all ) ]]; then
-        \curl --silent --connect-timeout 1  http://localhost/whm-server-status >/dev/null;
-        if [ $? -ne 0 ]; then
-            display_critical "Apache is DOWN";
-        fi;
-   fi;
+	local httpdown
+	local httpdport
+	httpdown="Apache is DOWN!"
+	httpdport=$(grep 'apache_port' /var/cpanel/cpanel.config | awk -F':' '{print $2}')
+	if [[ ( -z $esp_check_disable_apache ) && ( -z $esp_check_disable_all ) ]]; then
+		curl --silent --connect-timeout 1  http://localhost:"${httpdport}"/whm-server-status >/dev/null
+		# shellcheck disable=SC2181
+		[[ $? != 0  ]] && ps_display_critical "${httpdown}"
+	fi
 }
 
-# This check will verify if exim is in the processlist 
-function check_exim(){
-   if [[ ( -z $esp_check_disable_exim ) && ( -z $esp_check_disable_all ) ]]; then
-        # Escape PS and enhance grep to save space
-        \ps aux | grep '/usr/sbin/exi[m]' > /dev/null;
-        if [ $? -eq 1 ]; then
-            display_critical "Exim is DOWN";
-        fi;
-   fi;
+# This check will verify if exim is in the processlist
+function check_exim() {
+	local exidown="Exim is DOWN!"
+	if [[ ( -z $esp_check_disable_exim ) && ( -z $esp_check_disable_all ) ]]; then
+		if ! pgrep -f "exi[m]" >/dev/null; then
+			ps_display_critical "${exidown}"
+		fi
+	fi
 }
 
 # This function uses an mysql ping to check for root mysql connectivity.
 # If mysql is up, however if root can not connect to mysql it will fail
 
 function check_mysql() {
-   if [[ ( -z $esp_check_disable_mysql ) && ( -z $esp_check_disable_all ) ]]; then
-        \mysqladmin -h localhost -u root  ping 2>/dev/null 1>/dev/null;
-        if [ $? -ne 0 ]; then
-            display_critical "MySQL is DOWN";
-        fi;
-   fi;
+	local mysqldown="MySQL is DOWN!"
+	if [[ ( -z $esp_check_disable_mysql ) && ( -z $esp_check_disable_all ) ]]; then
+		if ! mysqladmin ping 2>/dev/null 1>/dev/null; then
+			ps_display_critical "${mysqldown}"
+		fi
+	fi
 }
 
 function check_mailserver() {
-    if [[ ( -z $esp_check_disable_mailserver ) && ( -z $esp_check_disable_all ) ]]; then
-        if [ `ps aux | grep 'dovecot\|courier'| grep -v grep  | wc -l` -lt 1 ]; then
-            display_critical "Mailserver is Down";
-        fi;
-    fi;
+	local mailserverdown="Mailserver is DOWN!"
+	if [[ ( -z $esp_check_disable_mailserver ) && ( -z $esp_check_disable_all ) ]]; then
+		if ! pgrep -f "dovecot|courier" >/dev/null; then
+			ps_display_critical "${mailserverdown}"
+		fi
+	fi
+}
+
+function check_tailwatchd {
+	local tailwatchdown="Tailwatchd is DOWN!"
+	# shellcheck disable=SC2154
+	if [[ ( -z $esp_check_disable_tailwatchd ) && ( -z $esp_check_disable_all ) ]]; then
+		if ! pgrep -f "tailwatchd" >/dev/null; then
+			ps_display_critical "${tailwatchdown}"
+		fi
+	fi
+}
+
+function check_chkservd {
+	local chkservdsuspended="Chkservd is SUSPENDED!"
+	# shellcheck disable=SC2154
+	if [[ ( -z $esp_check_disable_chkservd ) && ( -z $esp_check_disable_all ) ]]; then
+		if [ -e /var/run/chkservd.suspend ]; then
+			ps_display_critical "${chkservdsuspended}"
+		fi
+	fi
+}
+
+function check_cpsrvd {
+	local cpsrvdown="cpsrvd is DOWN"
+	# shellcheck disable=SC2154
+	if [[ ( -z $esp_check_disable_cpsrvd ) && ( -z $esp_check_disable_all ) ]]; then
+		if ! pgrep -f "cpsrvd" >/dev/null; then
+			ps_display_critical "${cpsrvdown}"
+		fi
+	fi
+}
+
+#
+# Quick Enable/Disable Checks
+# ---------------------------
+#
+
+alias ec-all="unset esp_check_disable_all"
+alias dc-all="export esp_check_disable_all=1"
+alias ec-apache="unset esp_check_disable_apache"
+alias dc-apache="export esp_check_disable_apache=1"
+alias ec-mysql="unset esp_check_disable_mysql"
+alias dc-mysql="export esp_check_disable_mysql=1"
+alias ec-exim="unset esp_check_disable_exim"
+alias dc-exim="export esp_check_disable_exim=1"
+alias ec-mailserver="unset esp_check_disable_mailserver"
+alias dc-mailserver="export esp_check_disable_mailserver=1"
+alias ec-cpsrvd="unset esp_check_disable_cpsrvd"
+alias dc-cpsrvd="export esp_check_disable_cpsrvd=1"
+alias ec-yum="unset esp_check_disable_yum"
+alias dc-yum="export esp_check_disable_yum=1"
+alias ec-backup="unset esp_check_disable_backup"
+alias dc-backup="export esp_check_disable_backup=1"
+alias ec-easyapache="unset esp_check_disable_easyapache"
+alias dc-easyapache="export esp_check_disable_easyapache=1"
+alias ec-tailwatchd="unset esp_check_disable_tailwatchd"
+alias dc-tailwatchd="export esp_check_disable_tailwatchd=1"
+alias ec-upcp="unset esp_check_disable_upcp"
+alias dc-upcp="export esp_check_disable_upcp=1"
+
+esp_help_edchecks(){
+	help_section "Quick Enable/Disable Checks"
+	help_command "ec-(all | apache | mysql | exim | mailserver | cpsrvd | yum | backup | easyapache | tailwatchd | upcp)" "Enable check for the specified service (or all)"
+	help_command "dc-(all | apache | mysql | exim | mailserver | cpsrvd | yum | backup | easyapache | tailwatchd | upcp)" "Disable check for the specified service (or all)"
 }
 
 #
@@ -234,39 +489,24 @@ function check_mailserver() {
 
 # Function to return the current active tty/pts sessions
 function current_connected() {
-    echo `w | awk '{print $2}'| tail -n +3| sort`;
-};
+	w | awk '{print $2}'| tail -n +3| sort
+}
 
 # Function to check for new connections and display warning if new connections are found.
 function new_connected() {
-    if [[ ( -z $esp_check_disable_ssh ) && ( -z $esp_check_disable_all ) ]]; then
-        if [ "`current_connected`" != "$connected_users" ];then
-           \echo -n "$(tput setaf 3)SSH login/logout.$(tput sgr0) Use save_connected to dismiss, ";
-        fi;
-    fi;
-};
+	# shellcheck disable=SC2154
+	if [[ ( -z $esp_check_disable_ssh ) && ( -z $esp_check_disable_all ) ]]; then
+		if [ "$(current_connected)" != "$connected_users" ]; then
+			echo -n "${YELLOW}SSH login/logout.${END} Use save_connected to dismiss, "
+		fi
+	fi
+}
 
 # Function to save the current users an dismiss the SSH warning
-function save_connected(){
-    export connected_users=`current_connected`;
-};
-
-
-#
-# Display Alert Levels
-# --------------------
-
-function display_critical(){
-    \echo -ne "$(tput setaf 1)$(tput bold)$1$(tput sgr0), "
-};
-
-function display_warn(){
-    \echo -ne "$(tput setaf 3)$1$(tput sgr0), "
-};
-function display_info(){
-    \echo -ne "$(tput setaf 6)$1$(tput sgr0), "
-};
-
+function save_connected() {
+	export connected_users
+	connected_users=$(current_connected)
+}
 
 #
 # Command Aliases and help functions
@@ -274,121 +514,312 @@ function display_info(){
 #
 #
 # Below are the extra commands and help functions for the script
-# Each help and alias section is limited to one Category 
+# Each help and alias section is limited to one Category
 #
 
+# Misc. Utilities
+# ---------------
+
+# shellcheck disable=SC2139
+alias get_jq="wget -nc -q -O ${DL_SCRIPTS}/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 && chmod +x ${DL_SCRIPTS}/jq"
 
 #
-# Backups 
+# WHM / cPanel
+# ------------
+
+#
+# Tweak Settings
+# -------------
+
+function tweaksettings () {
+    if [ "$#" -eq 0 ]; then
+        awk -F'=' '/=/{print$1,$2}' /var/cpanel/cpanel.config | while read -r tweak val; do
+            printf "${CYAN}Tweak:${END} %s ${CYAN}Value:${END} %s\\n" "$tweak" "$val";
+            awk -F':' -v var="$tweak" '$1==var{f=1}/^$/{f=0}f && /label/{gsub(/\047/,"");$1="";print $0}f && /help/{gsub(/\047/,"");$1="";print $0}' /usr/local/cpanel/whostmgr/docroot/themes/x/tweaksettings/Main.yaml;
+            printf '\n';
+        done;
+    else
+        if [ "$#" -eq 1 ] && [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+            cat  1>&2 <<'EOF'
+Usage: tweaksettings [-p|--pager] [-t|--tweak] [-h|--help]
+This function provides WHM name/description and current values
+By default, all values are listed
+  -h|--help          print help
+  -t|--tweak $tweak  print for given tweak name
+  -p|--pager         print all values to pager
+EOF
+        else
+            if [ "$#" -eq 1 ] && [ "$1" == "-p" ] || [ "$1" == "--pager" ]; then
+                awk -F'=' '/=/{print$1,$2}' /var/cpanel/cpanel.config | while read -r tweak val; do
+                    printf "${CYAN}Tweak:${END} %s ${CYAN}Value:${END} %s\\n" "$tweak" "$val"
+                    awk -F':' -v var="$tweak" '$1==var{f=1}/^$/{f=0}f && /label/{gsub(/\047/,"");$1="";print $0}f && /help/{gsub(/\047/,"");$1="";print $0}' /usr/local/cpanel/whostmgr/docroot/themes/x/tweaksettings/Main.yaml;
+                    printf '\n';
+                done | less -Ri;
+            else
+                if [ "$#" -ge 2 ] && [ "$1" == "-t" ] || [ "$1" == "--tweak" ]; then
+                    local tweak arg argar i;
+                    for arg in "$@";
+                    do
+                        argar+=("$arg");
+                    done;
+                    for ((i=1; i<${#argar[@]}; i++))
+                    do
+                        if grep --color=auto -q "^${argar[$i]}:" /usr/local/cpanel/whostmgr/docroot/themes/x/tweaksettings/Main.yaml; then
+                            val="$(awk -F'=' -v var="${argar[$i]}" '$1==var{print$2}' /var/cpanel/cpanel.config)";
+                            printf "${CYAN}Tweak:${END} %s ${CYAN}Value:${END} %s\\n" "${argar[i]}" "$val";
+                            awk -F':' -v var="${argar[$i]}" '$1==var{f=1}/^$/{f=0}f && /label/{gsub(/\047/,"");$1="";print $0}f && /help/{gsub(/\047/,"");$1="";printf $0"\n"}' /usr/local/cpanel/whostmgr/docroot/themes/x/tweaksettings/Main.yaml;
+                        else
+                            printf "${RED}Tweak not found:${END} %s\\n" "$arg";
+                        fi;
+                    done;
+                fi;
+            fi;
+        fi;
+    fi
+}
+
+function esp_help_tweaksettings() {
+        help_section "Tweak Settings";
+       	help_command "tweaksettings" "Get information on any available Tweak Setting, Args: tweaksettings [-h|--help] [-p|--pager] [-t|--tweak]"
+}
+
+#
+# Backups
 # -------
 
-alias last-cpbackup="\less \`\ls -t1 /usr/local/cpanel/logs/cpbackup | \grep -v \/| \head -n 1\`";
-alias bktxt='date +.Backup.%F.%T';
-alias backup-report="curl -s --insecure https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/backup_report.sh| sh";
-function bke() { if [ ! -e $@`bktxt` ]; then bkc $@; fi; vim $@;};
+alias bktxt='date +.cpbak.${TECH}.%F.%T'
+alias backup-report="curl -s --insecure https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/backup_report.sh| sh"
+function last-cpbackup() {
+	if [ -d /usr/local/cpanel/logs/cpbackup  ]; then
+		# shellcheck disable=SC1001
+		less "$(find /usr/local/cpanel/logs/cpbackup/*.log -type f|tail -1)"
+	fi
+}
+function bke() { if [ ! -e "$*""$(bktxt)" ]; then bkc "$*"; fi; vim "$*";}
 function cl() {
-    \cd $@;
-    if [ `ls -1 | wc -l` -lt "$esp_cl_maxfiles" ]; then
-        ls;
-    else
-        echo "Directoy listing disabled due to there being more than $esp_cl_maxfiles files to list";
-   fi;
-};
-function bkc() { cp -v $@ $@`bktxt`;};
-function bkm() { mv -v $@ $@`bktxt`;};
+	# shellcheck disable=SC1001
+	\cd "$@" || return
+	# shellcheck disable=SC1001
+	if [ "$(find . -maxdepth 1| wc -l)" -lt "${esp_cl_maxfiles}" ]; then
+		ls
+	else
+		echo "Directory listing disabled due to there being more than ${esp_cl_maxfiles} files to list"
+	fi
+}
+function bkc() { cp -pav "$*" "$*$(bktxt)";}
+function bkm() { mv -v "$*" "$*$(bktxt)";}
+function b64-encdump() { echo "===" && gzip -c "$1"|base64 && echo "===" && echo "To decode run \"base64 -d <file>|gzip -d\"";}
+function b64-encfile() { gzip -c "$1"|base64>"$1".b64 && echo "Saved to $1.b64"; }
+function b64-decfile() { base64 -d "$1" |gzip -d; }
+function failed-backup-check () {
+  for log in /usr/local/cpanel/logs/cpbackup/*; do
+    printf -- "------------------------------\\n%s:\\n" "$log";
+    while read -r err; do
+      grep "$err" "$log";
+    done <<EOF
+Unable to get user id
+Unable to load cPanel user data
+You cannot copy the root user
+pkgacct failed to copy daily backup
+Could not use daily backup
+Bailing out
+The REMOTE_PASSWORD variable is missing
+Unable to find domain name
+Exiting with error code
+Could not remove directory
+Hook denied execution of pkgacct
+Could not open
+Could not chmod
+Could not rename
+failed to create the working dir
+Unable to fork
+Unable to waitpid
+Unable to open
+Failure dumping
+Unable to read
+does not appear to be valid XML
+Could not create directory
+mysqldump: Got error
+mysqldump failed
+EOF
+  done;
+  unset log err;
+}
+function backup-destinations {
+	grep -hoP '(?<=^id: ).+' /var/cpanel/backups/*.backup_destination|while read -r i;do /usr/local/cpanel/3rdparty/bin/perl -mCpanel::Backup::Transport -e 'use Data::Dumper; print Dumper(Cpanel::Backup::Transport->new()->get(@ARGV));' "$i";done
+}
 
 esp_help_backup(){
-    help_section "Backups"
-        help_command "bke filename" "Automatically creates a new backup of a file and opens the orignal";
-        help_command "bkc filename" "Makes a backup copy of a file with the standard backup text";
-        help_command "bkm filename" "Moves the file aside, renaming it with the standard backup text";
-        help_command "bktext" "Outputs the standard backup text featuring a timestamp";
-        help_command "backup-report" "Returns a backup report";
-        help_command "last-cpbackup" "Opens the last cpbackup log upin less.";
+	help_section "Backups"
+	help_command "bke <file>" "Automatically creates a new backup of a file and opens the original"
+	help_command "bkc <file>" "Makes a backup copy of a file with the standard backup text"
+	help_command "bkm <file>" "Moves the file aside, renaming it with the standard backup text"
+	help_command "bktxt" "Outputs the standard backup text featuring a timestamp"
+	help_command "backup-report" "Returns a backup report"
+	help_command "last-cpbackup" "Opens the last cpbackup log in less."
+	help_command "b64-encdump <file>" "Dump out a file to terminal in base64."
+	help_command "b64-encfile <file>" "Encode to a base64 file (will be named <file>.b64)."
+	help_command "failed-backup-check" "Show parts of backup logs which failed"
+	help_command "b64-decfile <file>" "Decode from a base64 file out to terminal."
+	help_command "backup-destinations" "Print all backup destinations."
 }
 
 #
-# System Information 
+# System Information
 # ------------------
 
-alias server-type="strings /var/cpanel/envtype";
-alias sys-snap-install="cd /root;wget wget http://cptechs.info/system-snapshot/sys-snap.sh;chmod +x sys-snap.sh;nohup sh sys-snap.sh &";
-alias sys-snap-start="cd /root;nohup sh sys-snap.sh &";
-alias cpu-count="grep proc /proc/cpuinfo |wc -l" ;
-alias cpu-info="grep model\ name /proc/cpuinfo | sed s/model\ name//g | uniq -c" ;
+alias server-type="strings /var/cpanel/envtype"
+alias sys-snap-install="wget -O /root/sys-snap.pl https://raw.githubusercontent.com/cPanelTechs/SysSnapv2/master/sys-snap.pl && cd /root/ && chmod 744 sys-snap.pl && perl sys-snap.pl --start"
+# shellcheck disable=SC1117
+alias sys-snap-start="\cd /root && perl sys-snap.pl --start"
+alias cpu-count="grep proc /proc/cpuinfo |wc -l"
+alias cpu-info="grep model\\ name /proc/cpuinfo | sed s/model\\ name//g | uniq -c"
+alias last-upcp="less /var/cpanel/updatelogs/last"
+alias summ-upcp="less /var/cpanel/updatelogs/summary.log"
+alias netspeed="curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -"
 
-esp_help_sys-info(){
-    help_section "System Information";
-        help_command "sys-snap-install" "Installs sys-snap";
-        help_command "sys-snap-start" "Starts sys-snap if already installed";
-        help_command "cpu-count" "Displays the number of cpus installed";
-        help_command "cpu-info" "Displays the number and type of cpus installed";
-        help_command "server-type" "Returns the server type from /v/c/envtype";
+function sysinfo {
+	TIER="$(grep -i cpanel= /etc/cpupdate.conf | cut -d'=' -f2)"
+	INSTALLDATE="$(date -d @"$(stat -t /var/log/cpanel-install.log | awk '{print $14}')")"
+	USERCOUNT="$(find /var/cpanel/users -type f | grep -c -E -v '(cp[0-9]{7}|system)')"
+	echo "${YELLOW}cPanel Version:${END} $(cat /usr/local/cpanel/version) (Installed on $INSTALLDATE)"
+	echo "${YELLOW}Release Tier:${END} ${TIER^}"
+
+	if [[ -f "/etc/redhat-release" ]]; then
+		echo "${YELLOW}OS:${END} $(cat /etc/redhat-release)"
+	else
+		echo "${YELLOW}OS:${END} $(grep "PRETTY" "/etc/os-release" | awk -F'=' '{print $2}' | sed 's/"//g')"
+	fi
+	echo "${YELLOW}Kernel:${END} $(uname -r)"
+	echo "${YELLOW}Arch:${END} $(uname -m)"
+	echo "${YELLOW}Environment:${END} $(cat /var/cpanel/envtype)"
+	echo "${YELLOW}CPU:${END} $(grep 'model name' /proc/cpuinfo | head -1 | cut -d':' -f2) w/ $(grep -c proc /proc/cpuinfo) cores"
+	echo "${YELLOW}Uptime:${END} $(uptime)"
+	echo "${YELLOW}cPanel Users:${END} ${USERCOUNT}"
+}
+
+# Proudly stolen from William L.
+function lst () {
+	if [[ "$#" -eq 0 ]]; then
+		local cwd
+		cwd="$(pwd)"
+		for each in ${cwd//\// }; do
+			full+="/$each";
+			# shellcheck disable=SC1001
+			\stat -c '%a %U:%G(%u:%g) %F %n' "$full"
+		done;
+		unset full each;
+	fi;
+	local i;
+	for i in "$@"; do
+		for each in ${i//\// }; do
+			full+="/$each"
+			# shellcheck disable=SC1001
+			\stat -c '%a %U:%G(%u:%g) %F %n' "$full"
+			if [[ -f "$full" ]]; then
+				sym="$(readlink -q "${full}")"
+				if [[ "${sym:=null}" == null ]]; then
+					# shellcheck disable=SC1001
+					\lsattr "$full"
+				else
+					# shellcheck disable=SC1001
+					\lsattr "$sym"
+				fi
+				unset sym;
+			fi
+		done
+		printf "\\n"
+		unset full each
+	done
+}
+
+function esp_help_sys-info() {
+	help_section "System Information"
+	help_command "sys-snap-install" "Installs sys-snap"
+	help_command "sys-snap-start" "Starts sys-snap if already installed"
+	help_command "cpu-count" "Displays the number of cpus installed"
+	help_command "cpu-info" "Displays the number and type of CPUs installed"
+	help_command "server-type" "Returns the server type from /v/c/envtype"
+	help_command "last-upcp" "Displays the last UPCP log"
+	help_command "summ-upcp" "Displays the UPCP Summary log"
+	help_command "sysinfo" "Displays various system information items"
+	help_command "lst" "Display directory (cwd) info"
+	help_command "netspeed" "Run a network speed test (from speedtest.net)"
 }
 
 
 #
-# Network Information 
+# Network Information
 # -------------------
 
-alias lsip='ifconfig | grep "inet addr"| grep -v "127.0.0.1"';
-alias lsip-real="curl -s http://cpanel.net/showip.cgi";
-alias lsip-mainip="strings /var/cpanel/mainip";
-alias ips=$(ifconfig | awk '/inet/ {if ($2!~/127.0|:$/) print $2}' | awk -F: '{print "echo "$2}');
-
+alias lsip='ifconfig | grep "inet addr"| grep -v "127.0.0.1"'
+alias lsip-real="curl -s -4 http://myip.cpanel.net/v1.0"
+alias lsip-mainip="strings /var/cpanel/mainip"
 # undocumented shortcut for marco
-alias localips='ips';
+alias localips='ips'
+
+function ips() {
+	ips="$(ifconfig | awk '/inet/ {if ($2!~/127.0|:$/) print $2}' | awk -F: '{print $2}')"
+	echo "${ips}"
+}
 
 function fcrdns() {
-   if [ -n "$1" ]; then
-       esp_fcdns_check "$1";
-    else
-       for IP in `echo \`cat /var/cpanel/mainip\`&&cat /etc/ips|awk {{print\ $1}}|cut -d \\: -f 1`; do
-           esp_fcdns_check "$IP";
-       done
-   fi
+	if [ -n "$1" ]; then
+		esp_fcdns_check "$1"
+	else
+		# shellcheck disable=SC1001
+		for IP in $(cat /var/cpanel/mainip && echo -e "" && awk '{print $1}' < /etc/ips|cut -d \: -f 1); do
+			esp_fcdns_check "$IP";
+		done
+	fi
 }
+
 function esp_fcdns_check() {
-   local ip_to_check="$1";
-   local rdns="`dig @4.2.2.2 +time=1 +short -x $ip_to_check`";
-   if [ -z $rdns ]; then
-       local rdns="Failed";
-       local rdns_ip="N/A";
-   else
-       local rdns_ip="`dig @4.2.2.2 +time=1 +short -x $ip_to_check | xargs dig +short `";
-   fi
-   if [ "$ip_to_check" = "$rdns_ip" ]; then
-       echo "$(tput setaf 3)$ip_to_check$(tput setaf 2) PASSED FCrDNS validation $(tput sgr0)$ip_to_check$(tput setaf 3)->$(tput sgr0)$rdns$(tput setaf 3)->$(tput sgr0)$rdns_ip";
-   else
-       echo "$(tput setaf 3)$ip_to_check$(tput setaf 1) FAILED FCrDNS validation $(tput sgr0)$ip_to_check$(tput setaf 3)->$(tput sgr0)$rdns$(tput setaf 3)->$(tput sgr0)$rdns_ip";
-   fi
+	local ip_to_check
+	local rdns
+	local rdns_ip
+
+	ip_to_check="$1"
+	rdns="$(dig @4.2.2.2 +time=1 +short -x "${ip_to_check}")";
+	if [ -z "${rdns}" ]; then
+		rdns="Failed";
+		rdns_ip="N/A";
+	else
+		rdns_ip="$(dig @4.2.2.2 +time=1 +short -x "${ip_to_check}" | xargs dig +short )";
+	fi;
+	if [ "${ip_to_check}" = "${rdns_ip}" ]; then
+		echo "${YELLOW}${ip_to_check}${GREEN} PASSED FCrDNS validation ${END}${ip_to_check}${YELLOW}->${END}${rdns}${YELLOW}->${END}${rdns_ip}";
+	else
+		echo "${YELLOW}${ip_to_check}${RED} FAILED FCrDNS validation ${END}${ip_to_check}${YELLOW}->${END}${rdns}${YELLOW}->${END}${rdns_ip}";
+	fi;
+}
+
+function dbug-assl() {
+	local domain
+	domain="$1"
+	/usr/local/cpanel/3rdparty/bin/perl -MCpanel::DnsRoots -e 'use Data::Dumper; print Dumper(Cpanel::DnsRoots::Resolver->new(debug => 1)->recursive_query("'"${domain}"'","A"));'
 }
 
 function esp_help_net() {
-    help_section "Network Information";
-        help_command "ips" "Quick listing of the IP addresses on the server, and onlye the ips (one per line)";
-        help_command "lsip" "Displays all the ip addresses with subnet and Bcast addresses";
-        help_command "lsip-real" "Displays the external ip address of the server seen by the internet.";
-        help_command "lsip-mainip" "Displays cPanel's mainip from /v/c/mainip";
-        help_command "fcrdns" "Checks the rDNS and Forward-confirmed reverse DNS of all IPs, or an IP you specify";
+	help_section "Network Information"
+	help_command "ips" "Quick listing of the IP addresses on the server, and only the ips (one per line)"
+	help_command "lsip" "Displays all the ip addresses with subnet and Bcast addresses"
+	help_command "lsip-real" "Displays the external ip address of the server seen by the internet."
+	help_command "lsip-mainip" "Displays cPanel's mainip from /v/c/mainip"
+	help_command "dbug-assl" "Debug a domain on AutoSSL"
+	help_command "fcrdns" "Checks the rDNS and Forward-confirmed reverse DNS of all IPs, or an IP you specify"
 }
 
 
 #
-# Account Information 
+# Account Information
 # ------------------
 
-alias accounting_cruft_probe="esp_script_dl \"accounting_cruft_probe\" \"https://raw.githubusercontent.com/cPanelTechs/accounting_cruft_probe/master/accounting_cruft_probe\"";
-alias acctinfo="esp_script_dl \"acctinfo\" \"http://www.mindslayer.net/cptech/acctinfo\"";
-
-
-function acctinfo-marco() { dom="$1" ; if (echo $dom|egrep "\.") then u=$(/scripts/whoowns $dom); else tmp=$(egrep " $dom$" /etc/trueuserdomains|cut -d: -f1); u=$dom; dom=$tmp;fi; homedir=$(egrep "^$u:" /etc/passwd|cut -d":" -f6); www=$homedir/public_html/ ; echo -e "\n"$dom"\n"$u"\n"$www"\n"; fgrep -i spended /var/cpanel/users/$u; egrep "limit.*1$" /var/cpanel/users/$u; ssl=$homedir/ssl; }
+alias acctinfo="esp_script_dl \"acctinfo\" \"https://raw.githubusercontent.com/cPanelInc/tech-acctinfo/master/acctinfo\" \"--nocode\""
 
 function esp_help_account() {
-    help_section "Account Information";
-        help_command "accounting_cruft_probe" "Script to locate the remains of an account";
-	help_command "acctinfo" "Robust Account information script, Args: username/domain --listdbs --listssls q (quiet)";
-        help_command "acctinfo-marco" "Marco's Gathers basic info for an account";
+	help_section "Account Information";
+	help_command "acctinfo" "Robust Account information script, Args: username/domain --listdbs --listssls q (quiet)"
 }
 
 #
@@ -398,147 +829,638 @@ function esp_help_account() {
 alias sslhunter="esp_script_dl \"sslhunter.sh\" \"https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/sslhunter.sh\"";
 alias ssl-verify='openssl x509 -noout -text -in';
 
-function sslshort() { openssl x509 -noout -text -in "$1" | egrep "Issuer|Subject:|^[ ]*Not"; }
+function sslshort() { openssl x509 -noout -text -in "$1" | grep -E "Issuer|Subject:|^[ ]*Not"; }
 
 function esp_help_ssl() {
-    help_section "SSL";
-        help_command "ssl-verify" "Alias for openssl x509 -noout -text -in used to test certs";
-        help_command "sslhunter" "Ussage: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path";
-        help_command "sslshort" "Brief output of ssl-verify, basicly just the output you need.";
+	help_section "SSL";
+	help_command "ssl-verify" "Alias for openssl x509 -noout -text -in used to test certs"
+	help_command "sslhunter" "Usage: sslhunter new.cert -or- sslhunter new.cert /path/to/ssl/dir /other/search/path"
+	help_command "sslshort" "Brief output of ssl-verify, basically just the output you need."
+}
+
+#
+# AutoSSL & Hostname SSL
+# ----------------------
+
+alias autossl-provider="python -m json.tool /var/cpanel/autossl.json | grep provider | grep -v properties"
+alias hostname-ssl="/usr/local/cpanel/bin/checkallsslcerts --allow-retry --verbose"
+
+
+function autossl-queue {
+	JSONFILE='/var/cpanel/autossl_queue_cpanel.json'
+	SQLITE='/var/cpanel/autossl_queue_cpanel.sqlite'
+	CPSQL='/usr/local/cpanel/3rdparty/bin/sqlite3'
+	TMPFILE='/tmp/autossl-queue-list.tmp'
+	SERVERIP=$(curl -Ls http://cpanel.net/showip.shtml)
+	CURMO=$(date +'%Y-%m-%d')
+	PREVMO=$(date --date="$(date +%Y-%m-%d) -1 month" +'%Y-%m-%d')
+	CPSQL='/usr/local/cpanel/3rdparty/bin/sqlite3'
+	if [ -f $CPSQL ]
+	then
+		SQLITECMD=$CPSQL
+	else
+		SQLITECMD=sqlite3
+	fi
+	if [ -f $SQLITE ]
+	then
+		$SQLITECMD -separator ' ' $SQLITE 'SELECT order_item_id,vhost_name FROM requests' > $TMPFILE
+		while IFS= read -r line < "${TMPFILE}"
+		do
+			OID=$(echo "$line" | awk '{print $1}')
+			VHOST=$(echo "$line" | awk '{print $2}')
+			echo "Domain: ${VHOST}"
+			echo "URL: https://manage2.cpanel.net/certificate.cgi?oii=${OID}"
+			echo -e "=========="
+		done
+	else
+		echo "This server is still using the old JSON queue."
+		echo "Support for this will be added to ESP soon. For now, use:"
+		echo "http://manage2.cpanel.net/certificates.cgi?q=${SERVERIP}&match=origin+ip&from=${PREVMO}&to=${CURMO}&t=&s=pending"
+		echo -e "\\n -- OR -- \\n"
+		echo "cat ${JSONFILE} | python -mjson.tool"
+
+	fi
+	forceremove "${TMPFILE}"
+}
+
+function autossl-rewrite() {
+	/usr/local/cpanel/3rdparty/bin/perl -MCpanel::ApacheConf::DCV -e 'for my $p (Cpanel::ApacheConf::DCV::get_patterns()) {print "RewriteCond %{REQUEST_URI} $p\n"}'
+}
+
+function autossl-exclude() {
+	local USER=${1}
+	local PATH='/var/cpanel/ssl/autossl/excludes/'${1}'.json'
+	if [ -f "$PATH" ] 
+	then
+	/usr/bin/python -m json.tool "${PATH}"
+	else echo "${RED}User does not have any AutoSSL excluded domains or does not exist${END}"
+	fi
+}
+
+function esp_help_AutoSSL() {
+	help_section "AutoSSL"
+	help_command "autossl-provider" "Checks the AutoSSL provider"
+	help_command "hostname-ssl" "Runs the checkallsslcerts script"
+	help_command "autossl-queue" "Parses AutoSSL queue (currently only sqlite)"
+	help_command "autossl-rewrite" "Prints the current RewriteConditions needed for DCV checks"
+	help_command "autossl-exclude" "Checks for AutoSSL excluded domains, usage: autossl-exclude <username>"
 }
 
 #
 # Exim & Mail
 # -----------
-alias exim-count="exim -bpc";
-alias exim-stats-size="du -h --max-depth=0 /var/lib/mysql/eximstats/" ;
+alias exim-count="exim -bpc"
+alias rblcheck="esp_script_dl \"rblcheck\" \"https://raw.githubusercontent.com/cPanelPeter/rblcheck/master/rblcheck\""
+alias sse="esp_script_dl \"sse.pl\" \"https://raw.githubusercontent.com/cPanelTechs/SSE/master/sse.pl\""
 
-function esp_help_mail(){
-    help_section "Exim & Mail"; 
-        help_command "exim-count" "Displays the number of messages in the exim queue";
-        help_command "exim-stats-size" "Displays the size of the eximstats database";
+function esp_help_mail() {
+	help_section "Exim & Mail"
+	help_command "exim-count" "Displays the number of messages in the exim queue"
+	help_command "rblcheck" "Checks common blacklists for listings"
+	help_command "sse" "Runs SSE Mail Checker"
 }
 
 #
 # MySQL
 # -----
-alias mysqlerr="less /var/lib/mysql/`hostname`.err";
-alias mysqltuner="esp_script_dl \"tuning-primer.sh\" \"https://launchpad.net/mysql-tuning-primer/trunk/1.6-r1/+download/tuning-primer.sh\"";
+alias mysqlerr='less /var/lib/mysql/$(hostname).err'
+alias mysqltuner="esp_script_dl \"tuning-primer.sh\" \"https://launchpad.net/mysql-tuning-primer/trunk/1.6-r1/+download/tuning-primer.sh\""
+alias mysqltuner2="esp_script_dl \"mysqltuner.pl\" \"https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl\""
 function esp_help_mysql() {
-    help_section "MySQL & Databases";
-        help_command "mysqlerr" "Opens the mysql error log in less";
-        help_command "mysqltuner" "MySQL tuning Primer Script ( https://launchpad.net/mysql-tuning-primer/ )";
+	help_section "MySQL & Databases"
+	help_command "mysqlerr" "Opens the MySQL error log in less"
+	help_command "mysqltuner" "MySQL Tuning Primer Script < https://launchpad.net/mysql-tuning-primer/ >"
+	help_command "mysqltuner2" "MySQL Tuning Script < http://mysqltuner.pl/ >"
 }
-
 
 #
 # PHP & Apache
 # ---
-alias phpinfo="/usr/local/cpanel/bin/rebuild_phpconf --current";
-alias ea-info="curl -s https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh";
+alias phpinfo="/usr/local/cpanel/bin/rebuild_phpconf --current"
+alias ea-info="curl -s https://raw.githubusercontent.com/cPanelTechs/TechScripts/master/ea-precheck.sh | sh"
+alias webstats-probe="esp_script_dl \"webstatsprobe.pl\" \"https://raw.githubusercontent.com/cPanelTechs/WebStatsProbe/master/webstatsprobe.pl\""
 
-function esp_help_PHP_Apache(){
-    help_section "PHP & Apache";
-        help_command "phpinfo" "Displays php handler information";
-        help_command "ea-info" "Runs a cpanel script to test ea information (ea-precheck.sh)";
+# Proudly stolen from William L.
+function create-phpinfo () {
+	if [[ "$#" -eq 0 ]]; then
+		cwd="$(pwd)";
+		if [[ "$cwd" =~ ^/home.?/.+ ]]; then
+			_user="$(awk -F'/' '{print$3}' <<<"$cwd")";
+			if [ ! -f "$cwd"/phpinfo.php ]; then
+				printf 'Creating %s/phpinfo.php... ' "$cwd";
+				printf '<?php phpinfo(); ?>\n' >> "$cwd"/phpinfo.php;
+				printf "chown'ing... ";
+				chown "$_user". "$cwd"/phpinfo.php;
+				printf "Done: %s/phpinfo.php\\n" "$cwd";
+			else
+				printf "%s/phpinfo.php already exists!\\n" "$cwd";
+				# shellcheck disable=SC1001
+				\ls -lah "$cwd"/phpinfo.php;
+			fi;
+		else
+			printf "CWD doesn't appear valid: %s\\n" "$cwd";
+		fi;
+		unset cwd _user;
+	elif [[ "$#" -eq 1 ]]; then
+		if [[ "$1" == -p ]]; then
+			printf '<?php phpinfo(); ?>\n';
+		fi;
+	elif  [[ "$#" -gt 1 ]]; then
+		if [[ "$1" == -d ]]; then
+			local dom;
+			for dom in "${@:2}"; do
+				if [[ "$dom" =~ .+\..+ ]]; then
+					doc="$(awk -F':' -v var="${dom}" '$1==var{split($2,path,"=="); print path[5]}' /etc/userdatadomains)";
+					_user="$(awk -F'[: =]' -v var="$dom" '$1==var{print$3}' /etc/userdatadomains)";
+					if [[ ! "${doc:=null}" == null ]]; then
+						if [ ! -f "$doc"/phpinfo.php ]; then
+							printf 'Creating %s/phpinfo.php... ' "$doc";
+							printf '<?php phpinfo(); ?>\n' >> "$doc"/phpinfo.php;
+							printf "chown'ing... ";
+							chown "$_user". "$doc"/phpinfo.php;
+							printf "Done: %s/phpinfo.php\\n" "$doc";
+						else
+							printf "%s/phpinfo.php already exists!\\n" "$doc";
+							# shellcheck disable=SC1001
+							\ls -lah "$doc"/phpinfo.php;
+						fi;
+					else
+						printf "Couldn't find %s in /etc/userdatadomains\\n" "$dom";
+					fi
+				else
+					printf "%s is not a valid domain\\n" "$dom";
+				fi;
+			done;
+		fi;
+	else
+		printf "Unrecognized arg\\n";
+	fi;
+};
+
+function esp_help_PHP_Apache() {
+	help_section "PHP & Apache"
+	help_command "phpinfo" "Displays PHP handler information"
+	help_command "ea-info" "Runs a cPanel script to test EA information (ea-precheck.sh)"
+	help_command "webstats-probe" "Probe webstats to see what is going on"
+	help_command "create-phpinfo" "Create PHP Info file under <user>"
+	help_command "vhostphp" "Display PHP handler information for vhost"
+}
+
+#
+# EasyApache 4
+# ------------
+alias fix-ea4-symlinks="/etc/yum/universal-hooks/multi_pkgs/posttrans/ea-__WILDCARD__/060-setup_apache_symlinks.pl"
+
+# Proudly stolen from William L.
+function vhostphp () {
+	test -f /usr/local/cpanel/bin/whmapi1||{ >&2 printf "whmapi1 not found\\n"; return; };
+	test -f /etc/cpanel/ea4/is_ea4||{ >&2 printf "Not EA4\\n"; return; };
+	if [ "$#" -eq 0 ]; then
+		/usr/local/cpanel/bin/whmapi1 php_get_vhost_versions|awk '/ +vhost:/{print $2,ver} {ver=$2}';
+	else
+		vhosts="$*";
+		/usr/local/cpanel/bin/whmapi1 php_get_vhost_versions|awk '/ +vhost:/{print $2,ver} {ver=$2}'|grep -E "${vhosts// /|}";
+	fi;
+};
+
+function esp_help_EA4_PHP(){
+	help_section "EasyApache 4 PHP Binaries"
+	help_command "fix-ea4-symlinks" "Fixes missing EasyApache 4 symlinks"
 }
 
 #
 # Bash Navigation
 # ---------------
 
-alias cl-off="unalias cd";
-alias badcd="unalias cd";
-alias cl-on="alias cd=cl";
-alias up="cd ..";
-alias la="ls -lah";
+alias cl-off="unalias cd"
+alias badcd="unalias cd"
+alias cl-on="alias cd=cl"
+alias up="cd .."
+alias la="ls -lah"
 
 function esp_help_bash_nav (){
-    help_section "Bash Navigation";
-        help_command "cl directory" "Changes into a directory and outputs a ls";
-        help_command "cl-on" "Enables cl for the cd command";
-        help_command "cl-off" "clears the alias for cd=cl";
-        help_command "la" "Alias for 'ls -lah'";
-        help_command "up" "Jumps into the parent directory aka cd ..";
-        help_command "badcd" "Useful when the automatic cd&ls is messing up";
+	help_section "Bash Navigation"
+	help_command "cl directory" "Changes into a directory and outputs a ls"
+	help_command "cl-on" "Enables cl for the cd command"
+	help_command "cl-off" "clears the alias for cd=cl"
+	help_command "la" "Alias for 'ls -lah'"
+	help_command "up" "Jumps into the parent directory aka cd .."
+	help_command "badcd" "Useful when the automatic cd&ls is messing up"
 }
-
 
 #
 # Migrations
 # ----------
 
-alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.githubusercontent.com/philstark/cPMigration/PUBLIC/cpmig.sh\"";
-alias cpeval2="curl -s --insecure https://raw.githubusercontent.com/cPanelMigrations/cpeval2/master/cpeval2 | perl";
-alias updateuserdomains-universal="lwp-request http://httpupdate.cpanel.net/cpanelsync/transfers_PUBLIC/pkgacct/ updateuserdomains-universal | perl";
+alias cpmig="esp_script_dl \"cpmig.sh\" \"https://raw.githubusercontent.com/CpanelInc/cPMigration/PUBLIC/cpmig.sh\""
+alias cpeval2="curl -sk https://raw.githubusercontent.com/cPanelTechs/cpeval2/master/cpeval2 | perl"
+alias updateuserdomains-universal="lwp-request http://httpupdate.cpanel.net/cpanelsync/transfers_PUBLIC/pkgacct/ updateuserdomains-universal | perl"
 
 function esp_migrations () {
-    help_section "Migration Tools";
-        help_command "cpmig" "cPanel Migration Script";
-        help_command "cpeval2" "cpeval2 Migration Script";
-        help_command "updateuserdomains-universal" "Creates Required files for cpeval2";
-};
+	help_section "Migration Tools"
+	help_command "cpmig" "cPanel Migration Script"
+	help_command "cpeval2" "cpeval2 Migration Script"
+	help_command "updateuserdomains-universal" "Creates Required files for cpeval2"
+}
 
 #
 # VIRTFS TOOLBOX Commands
 # --------------------------
 
 function virtfs_mounts() {
-        local USER=$1;
-        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_virtfs_mounts(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }';
-};
+	local USER=$1;
+	/usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_virtfs_mounts(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }';
+}
 
 function virtfs_exim_deps() {
-        local USER=$1;
-        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_exim_deps(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }';
-};
+	local USER=$1;
+	/usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_exim_deps(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }';
+}
 
 function virtfs_mount_points() {
-        local USER=$1;
-        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_virtfs_mount_points(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }'
-};
+	local USER=$1;
+	/usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_virtfs_mount_points(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }'
+}
 
 function virtfs_jailshell_path() {
-        local USER=$1;
-        /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_jailshell_path(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }'
-};
+	local USER=$1;
+	/usr/local/cpanel/3rdparty/bin/perl -MCpanel::Filesys::Virtfs -MData::Dumper -e 'my @blah = Cpanel::Filesys::Virtfs::get_jailshell_path(); foreach (@blah) { $_ =~  /((\/\w+)*\/?)/; print $1."\n"; }'
+}
 
 function esp_help_virtfs() {
-    help_section "Various utilities for obtaining virtfs information";
-	help_command "virtfs_mounts" "Prints out the currently mounted virtfs mounts.";
-	help_command "virtfs_exim_deps" "Prints out virtfs exim dependencies";
-	help_command "virtfs_mount_points" "Prints out all current virtfs mount points on the server";
-	help_command "virtfs_jailshell_path" "Prints out the current path for jailshell.  This probably won't change much.";
-};
-
+	help_section "Various utilities for obtaining virtfs information"
+	help_command "virtfs_mounts" "Prints out the currently mounted virtfs mounts."
+	help_command "virtfs_exim_deps" "Prints out virtfs exim dependencies"
+	help_command "virtfs_mount_points" "Prints out all current virtfs mount points on the server"
+	help_command "virtfs_jailshell_path" "Prints out the current path for jailshell.  This probably won't change much."
+}
 
 #
 # Other and Special Commands
 # --------------------------
 
-alias ssp="curl -s --insecure https://ssp.cpanel.net/SSP/run | sh ";
-alias check_libkey="sh <(curl -s --insecure https://raw.githubusercontent.com/cPMarco/cpm/master/libkey_check.sh) -v";
-alias wo="/usr/local/cpanel/scripts/whoowns";
-alias ccrpms='/usr/local/cpanel/scripts/check_cpanel_rpms';
-alias perdir='awk '\''BEGIN{dir=DIR?DIR:ENVIRON["PWD"];l=split(dir,parts,"/");last="";for(i=1;i<l+1;i++){d=last"/"parts[i];gsub("//","/",d);system("stat --printf \"%a\t%u\t%g\t\" \""d"\"; echo -n \" \";ls -ld \""d"\"");last=d}}'\'''
-alias csi="esp_script_dl \"csi.pl\" \"http://csi.cptechs.info/csi.pl\"";
+alias ssp="curl -sk https://ssp.cpanel.net/SSP/run | sh "
+alias bugreport="curl -sk https://ssp.cpanel.net/run|sh -s -- --bugreport"
+alias csi="esp_script_dl \"csi.pl\" \"https://raw.githubusercontent.com/cPanelTechs/CSI/master/csi.pl\""
+alias ssp-csi="curl -sk https://ssp.cpanel.net/run|sh -s -- --csi"
+alias wo="/usr/local/cpanel/scripts/whoowns"
+alias checkofac="grep -E '\\.(ir|mm|cu|sd|sy):' /etc/userdomains"
+alias ccrpms="/usr/local/cpanel/scripts/check_cpanel_rpms"
+alias fdrpms="/usr/local/cpanel/scripts/autorepair fix_duplicate_cpanel_rpms"
+alias uploadvt="esp_script_dl \"uploadvt\" \"https://utils.cpanel.xyz/uploadvt\""
+alias cpdoctor="esp_script_dl \"cpdoctor.sh\" \"https://cpdoctor.cpanel.xyz/cpdoctor.sh\""
+alias clicensets="/usr/local/cpanel/3rdparty/bin/perl <(curl -s https://raw.githubusercontent.com/cPanelInc/tech-cp_license_troubleshooter/master/cplicensets)"
+alias bdnserial="esp_script_dl \"updateserial.pl\" \"https://scripts.cpanel.xyz/updateserial.pl\""
+alias cpscan="esp_script_dl \"scan\" \"https://scan.cpanel.xyz/scripts/scan\""
+alias fixscreen="/bin/rpm --setugids screen && rpm --setperms screen"
+alias compare-mirrors="/usr/local/cpanel/3rdparty/bin/perl <(curl -s https://cpaneltech.ninja/cptech/compare-mirrors)"
+#alias createreseller="function _cr() { awk 'BEGIN {FS=\".\"} {print $4}'`; export RANDPASS=$(/usr/local/cpanel/3rdparty/bin/perl -MCpanel::PasswdStrength::Generate -e 'print Cpanel::PasswdStrength::Generate::generate_password(14)'); export TEMPUSER=\"cp\"$TICKET\"cptech\"; echo \"$TEMPUSER $RANDPASS\" && echo && /usr/local/cpanel/scripts/autorepair create_temp_reseller_for_ticket_access; }; _cr;";"` }"
+alias vtcheck="/usr/bin/perl <(curl -s https://cpaneltech.ninja/cptech/virustotalchk)"
+alias cpversion="cat /usr/local/cpanel/version"
+alias follow-upcp="/scripts/upcp --force --bg && tail -f /var/cpanel/updatelogs/last"
+alias cpsqlite="/usr/local/cpanel/3rdparty/bin/sqlite3"
 
+pphist() { ( IFS=$'\t'; for i in "$@"; do perl -e 'my $lastts=0;$login=0;while(<>) { chomp; if(/^#((?:\d){10})$/) { $lastts=$1;  } elsif (m,^(export (PS1|LANG|HISTFILE|HISTFILESIZE)=.+|if \[ -x /scripts/autorepair.+|uname -a|alias rm=.echo .Are you sure.+|curl https://ssp.cpanel.net/run.sh|echo -ne ..033.0;cPTKT.+)$,) { $login=1;  } else { print "\n" if($login);$login=0;print  "".localtime($lastts)." $_\n"; }  }' <"${i}"; done  )  }
+
+function prepare_strace() {
+	TSTAMP="$(date '+%Y%m%d-%H%M%S')"
+	TDIR=/root/cptechs/"${TECH}"/strace-"${TSTAMP}"
+
+	mkdir -p "${TDIR}"
+	echo "Working Directory: ${TDIR}"
+}
+
+# disable 2046 due to weird issues when quoting the $() stuff
+# shellcheck disable=SC2046
+function strace-cpsrvd() {
+	prepare_strace
+	strace -vvttffT -s "${STRACESTRLEN}" -o "${TDIR}"/pid $(pgrep -a 'cpsrv[d]|whostmgr[d]|cpanel[d]|webmail[d]' | grep -E -v 'defunct' | tee "${TDIR}"/process-list.txt | awk '{ printf " -p "  $1; }')
+}
+
+# disable 1001 to ignore the regular / warning
+# shellcheck disable=SC1001
+function strace-phpuser() {
+	prepare_strace
+
+	local STRUSER
+	local x
+	local process
+
+	STRUSER=$(pwd | cut -d \/ -f 3)
+	x="1"
+
+	killall -6 -u "${STRUSER}"
+
+	while [ $x = 1 ]
+	do process=$(pgrep -u "${STRUSER}")
+		if [ "${process}" ]
+		then x=0
+		fi
+	done
+
+	strace -vvttffT -s "${STRACESTRLEN}" -o "${TDIR}"/pid -p "${process}"
+}
+
+# disable 2046 due to weird issues when quoting the $() stuff
+# shellcheck disable=SC2046
+function strace-httpd() {
+	prepare_strace
+	strace -vvttffT -s "${STRACESTRLEN}" -o "${TDIR}"/pid $(pgrep -a httpd | grep -E -v 'defunct' | tee "${TDIR}"/process-list.txt | awk '{print "-p " $1 }')
+}
+
+# shellcheck disable=SC2013
+# Written by Aaron Horsely and modified by Terrance Robotham
+function saroverview() {
+	BC='/usr/bin/bc'
+	if [ -f $BC ]
+	then
+	clear
+	echo "== Server Time: =="
+	date '+%F %r'
+	echo -e "\\n== Memory Utilization Information: =="
+	free -m | awk '{ if ($1 == "Mem:") { TOTAL=$2; USED=$3; FREE=$4; } if ($1 == "-/+") { BUFFERS=$3; CACHE=$4; } } END {printf "Total Memory\tActive Memory\tPercentage Used\n%dM\t\t%dM\t\t%.2f%%\n",TOTAL,BUFFERS,BUFFERS/TOTAL * 100; }'
+	echo -e "\\n== Current Swap Usage: =="
+	swapon -s | sed 1d | awk 'BEGIN { print "DEVICE\t\tUSED\t\tTOTAL\t\tPERCENT USED"; } { DEVICE=$1; TOTAL=($3/1024); USED=($4/1024); PERCENT=((USED/TOTAL)*100); printf "%s\t%.2fM\t%.2fM\t%.2f%%\n",DEVICE,USED,TOTAL,PERCENT; }' | column -s$'\t' -t
+	echo -e "\\n== Top 10 Processes by Memory Usage: =="; ps -eo user,pid,%mem,rsz,args --sort=-rsz | head -11 | awk '{print $1,$2,$3,$4,$5}' | column -t
+	echo -e "\\n== Top 10 Processes By Swap Usage: =="; ( printf "%s\\t%s\\t%s\\n" "PID" "PROCESS" "SWAP"; ( for i in /proc/[0-9]*; do PROC=${i#/proc/}; NAME=$(ps -p "${PROC}" -o comm --no-headers); for SWAP in $(grep Swap "${i}"/smaps 2>/dev/null | awk '{print $2}' ); do let SUM=${SUM}+${SWAP}; done
+	echo "${PROC} ${NAME} $( echo "scale=2; ${SUM}/1024" | bc )M"; SUM=0; done | grep -Pv '\b0M$' | sort -grk3,3 | head -10 ) ) | column -t
+	echo -e "\\n== Top 10 Kernel Slab Caches: =="; ( echo "SIZE NAME"; slabtop -o -s c | sed 1,7d | head -10 | awk '{ printf "%.2fM\t%s\n",gensub(/K$/,"","g",$(NF-1))/1024,$NF; }' ) | column -t
+	echo -e "\\n== Last 30 Minutes Memory Usage: =="
+	sar -r -s "$(date --date='-50 minutes' +%T)" | sed 1,2d
+	echo -e "\\n== Last 30 Minutes Paging/Swap Statistics: =="
+	sar -B -s "$(date --date='-50 minutes' +%T)" | sed 1,2d
+	if [[ -f /tmp/sar-tempfile ]]; then forceremove /tmp/sar-tempfile; fi
+	sar -B -r -o /tmp/sar-tempfile 1 10 >/dev/null
+	echo -e "\\n== Current 1 Second Memory Usage Statistics (10 Count): =="
+	sar -r -f /tmp/sar-tempfile | sed 1,2d
+	echo -e "\\n== Current 1 Second Paging/Swap Statistics (10 Count): =="
+	sar -B -f /tmp/sar-tempfile | sed 1,2d
+	if [[ -f /tmp/sar-tempfile ]]; then forceremove /tmp/sar-tempfile; fi
+	else echo "${RED}bc is not installed${END}"
+	fi
+}
+
+function jsonpp() {
+	# shellcheck disable=SC2211
+	/usr/local/cpanel/3rdparty/perl/5*/bin/json_xs < "${1}"
+}
+
+function tfa() {
+	TFASECRET=$1 /usr/local/cpanel/3rdparty/bin/perl -MCpanel::Security::Authn::TwoFactorAuth::Google -E'my $auth = Cpanel::Security::Authn::TwoFactorAuth::Google->new( { "secret" => $ENV{"TFASECRET"}, "issuer" => "", "account_name" => ""  } ); say "Now: ".$auth->generate_code(); say "Past: ".$auth->generate_code(time -30); say "Future: ".$auth->generate_code(time + 30);'
+}
+
+function genpass () {
+	STR=${1}
+	STR="${STR:=14}"
+	/usr/local/cpanel/3rdparty/bin/perl -MCpanel::PasswdStrength::Generate -e "print Cpanel::PasswdStrength::Generate::generate_password($STR)"
+}
+
+function getsum () {
+	FILE=${1}
+	for PRG in {md5,sha1,sha256,sha512}sum ; do "${PRG}" "${FILE}" ; done
+}
 
 function oddthings () {
-    echo  "$(tput bold)odd things$(tput sgr0)";
-    lsof -Pni |grep -vE ':80|:443|imap|pop3|named|cpdavd|courier|dovecot|exim|mysql|pure|pro|sshd|cpsrvd|spamd|ntpd';
-};
+	echo  "${BOLD}oddthings${END}"
+	lsof -Pni |grep -vE ':80|:443|:7984|:8984|imap|postgres|pop3|named|cpdavd|courier|dovecot|exim|mysql|pure|pro|sshd|cpsrvd|spamd|ntpd|cPhulkd'
+}
+
+function showips() {
+	ifconfig | grep 'inet ' | grep -v 127.0.0.1 | awk -F':' "{'printf ("%5s: %s'\n'"), $1, $2'}" | sort -V |sed 's/^ *//g' | cut -d' ' -f1-3
+}
+
+function docroot() {
+	OWNER=$(/scripts/whoowns "${1}")
+	cd "$(grep documentroot /var/cpanel/userdata/"${OWNER}"/"${1}" | cut -d' ' -f2)" || return
+}
+
+# shellcheck disable=SC2181
+function genaccesshash() {
+	if [ -z "${1}" ]; then
+		UNAME='root'
+	else
+		UNAME=${1}
+	fi
+	echo "Generating hash for ${UNAME}.."
+	/usr/local/cpanel/bin/mkaccesshash "${UNAME}"
+	if [ $? -eq 0 ]; then
+		echo "Access hash generated."
+	fi
+}
+
+function createsess () {
+	if [[ ${#} -lt 1 ]]; then
+		echo "Must supply a User"
+		echo "Ex. - createsess <user> [service]"
+		return
+	fi
+	USER="${1}"
+	if [[ ! -z ${2} ]]; then
+		case "${2}" in
+			whm)
+				SERVICE='whostmgrd'
+				;;
+			cpanel)
+				SERVICE='cpaneld'
+				;;
+			webmail)
+				SERVICE='webmaild'
+				;;
+			*)
+				SERVICE="${2}"
+		esac
+	else
+		SERVICE='whostmgrd'
+	fi
+	whmapi1 create_user_session user="${USER}" service="${SERVICE}" locale="en"
+}
+
+function gendcv() {
+	FILE=${1}
+	CSRFILE=$(grep -v CERTIFICATE "${FILE}" | base64 -d | md5sum | awk '{print toupper($1)".txt"}')
+	echo "$(grep -v CERTIFICATE "${FILE}" | base64 -d | sha256sum | awk '{print $1}'; echo "comodoca.com")" > "${CSRFILE}"
+	echo "Created: ${CSRFILE}"
+}
+
+# shellcheck disable=2181
+function xscreen() {
+	if [[ "${#}" -lt 2 ]]; then
+		echo "Too few parameters, need both a NAME and COMMAND arguments";
+	elif [[ "${#}" -ge 3 ]]; then
+		echo "Too many arguments! Please quote your command if it contains flags or arguments"
+		echo "Extra Arguments Passed:"
+
+		for arg in "${@:3}"; do
+			echo "${arg}";
+		done
+	else
+		SOCK_NAME="${1}";
+		COMMAND="${2}";
+		screen -dmS "${SOCK_NAME}"
+		if [[ $? != 0 ]]; then
+			echo "Failed to create screen session, socket: ${SOCK_NAME} already exists.";
+		else
+			screen -S "${SOCK_NAME}" -X stuff "${COMMAND}";
+			# I fixed it - TJR 02112017 >> "; # The newline here is necessary, dont "fix" it
+			screen -ls;
+		fi
+	fi
+}
+
+alias ncpaste="nc nc.cpanel.xyz 9988"
+
+function b64ncpaste() {
+	FILE="${1}"
+	b64-encdump "${FILE}"|nc nc.cpanel.xyz 9988
+}
+
+function pastebin () {
+	DATA=$(cat -)
+
+	PASTE_URL="https://p.cpanel.xyz/api/create?apikey=B7wyLcQv7NHFnmn5g657"
+
+	TITLE="${TECH}-$(hostname) $(date +'%Y-%m-%d')"
+	RESULT=$(echo "${DATA}" | curl -s -d private=1 -d title="${TITLE}" --data-urlencode text@- "${PASTE_URL}")
+	RESULT=$(echo "${RESULT}" | sed -e 's/\/view\//\/view\/raw\//')
+
+
+	# shellcheck disable=SC1001
+	if [[ $RESULT =~ .*p\.cpanel\.xyz\/.* ]]
+	then
+		echo -e "\\nPaste available at ${RESULT}\\n"
+	else
+		echo -e "\\nFailed to create pastebin. Site returned:"
+		echo "----------"
+		echo -e "${RESULT}\\n"
+	fi
+}
+
+function b64paste() {
+	FILE="${1}"
+	b64-encdump "${FILE}"|pastebin
+}
+
+function transfer() {
+	if [ $# -eq 0 ]
+	then
+		echo -e "No arguments specified. Usage:\\necho transfer /tmp/test.md\\ncat /tmp/test.md | transfer test.md"
+		return 1
+	fi
+	local tmpfile
+	local basefile
+	tmpfile=$( mktemp -t transferXXX )
+	if tty -s
+	then basefile=$(basename "$1" | sed -e 's/[^a-zA-Z0-9._-]/-/g')
+		curl --progress-bar --upload-file "$1" "https://transfer.sh/$basefile" >> "${tmpfile}"
+	else
+		curl --progress-bar --upload-file "-" "https://transfer.sh/$1" >> "${tmpfile}"
+	fi
+	cat "${tmpfile}"
+	forceremove "${tmpfile}"
+}
+
+# shellcheck disable=SC2068
+function get_domain_status() {
+  DOMAINS=$(awk -F':' '{print $1}' /etc/userdomains | grep -v "\\*")
+  for d in ${DOMAINS[@]}; do
+    curl -sIL "${d}" > /dev/null
+    case $? in
+      6)
+        echo "${d}  |  Unable to resolve host" #| column -t -s'|' -o '  |  '
+        ;;
+      0)
+        echo "${d}  |  $(curl -sIL "${d}" | grep HTTP | tail -n 1)" #| column -t -s'|' -o '  |  '
+        ;;
+      *)
+        echo "${d}  |  $(curl -sSIL "${d}" 2>&1)" #| column -t -s'|' -o '  |  '
+        ;;
+    esac
+  done
+}
+
+# shellcheck disable=SC2068,SC2059,SC1117
+function domain_check() {
+  header="Domain|Result"
+  status=$(get_domain_status)
+  printf "${header}\n=========|======================\n${status}" | column -t -s'|' -o '  |  '
+  echo ""
+}
+
+# shellcheck disable=SC2199,SC2059
+function get-requires() {
+	if [[ -z ${@} ]]; then
+		echo "Must provide at least 1 RPM package name";
+		return 1;
+	fi
+	for pkg in "${@}"; do
+		printf "\\n#######\\n ${pkg} \\n#######\\n\\n"
+		rpm --test -e "${pkg}"
+		printf "\\n#######\\n ${pkg} \\n#######\\n\\n"
+	done
+}
 
 function esp_help_other() {
-    help_section "Other and Special Commands";
-        help_command "save_connected" "saves out the current ssh logins and dismisses the ssh login alert";
-        help_command "cphelp" "This Help message";
-        help_command "oddthings" "Shows odd things that are running on odd ports";
-        help_command "check_libkey" "Runs automated libkey checks";
-        help_command "perdir" "Marco's Display of Directory Permissions and it's parent directories";
-        help_command "wo" "Alias for /scripts/whoowns";
-        help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms";
-	help_command "csi" " Runs CSI";
+	help_section "Other and Special Commands"
+	help_command "save_connected" "saves out the current ssh logins and dismisses the ssh login alert"
+	help_command "ssp" "Run SSP"
+	help_command "bugreport" "SSP Bugreport"
+	help_command "cphelp" "This Help message"
+	help_command "oddthings" "Shows odd things that are running on odd ports"
+	help_command "checkofac" "Check for OFAC TLDs in /etc/userdomains"
+	help_command "wo" "Alias for /scripts/whoowns"
+	help_command "showips" "Show server IPs"
+	help_command "docroot <domain>" "Show docroot for domain"
+	help_command "genaccesshash [user]" "Generate access hash (for optional user)"
+	help_command "ccrpms" "Alias for /scripts/check_cpanel_rpms"
+	help_command "fdrpms" "Fix duplicate RPMs"
+	help_command "csi" "Runs CSI"
+	help_command "cpscan" "Runs cPScan"
+	help_command "cpdoctor" "Runs cpdoctor"
+	help_command "clicensets" "Runs License Troubleshooter"
+	help_command "bdnserial" "Bump DNS Serial"
+	help_command "tfa" "Pull TFA Keys, cat /var/cpanel/authn/twofactor_auth/tfa_userdata.json to pull secret"
+	help_command "fixscreen" "Screen RPM Fixer"
+	help_command "compare-mirrors" "cPanel Mirrors compare script"
+	help_command "jsonpp" "JSON Pretty Print"
+	help_command "createreseller" "Create cPanel Reseller account"
+	help_command "pphist <file>" "PrettyPrint History"
+	help_command "genpass [num]" "Generate Random Password"
+	help_command "getsum <file>" "Generate sums for a file"
+	help_command "createsess <user> <service>" "Creates session for user"
+	help_command "vtcheck <file>" "Checks file against VT"
+	help_command "uploadvt <file>" "Uploads file to VT"
+	help_command "gendcv <file>" "Generates DCV against CSR file"
+	help_command "cpversion" "Print the cPanel version installed on the server"
+	help_command "follow-upcp" "Start upcp in the background and tail the log file to follow progress"
+	help_command "saroverview" "Show general overview with SAR"
+	help_command "xscreen <socket_name> <command>" "Launches a screen session that executes the command provided. Screen session socket name is set with with the name provided"
+	help_command "ncpaste" "Pipe a command to ncpaste to output to https://nc.cpanel.xyz (4MB Limit) (Recommended for smaller text files)"
+	help_command "b64ncpaste <file>" "Base64 encode file and paste to https://nc.cpanel.xyz (4MB Limit) (Recommended for smaller text files)"
+	help_command "pastebin" "Pipe a command to pastebin to output to https://p.cpanel.xyz (Recommended for larger files)"
+	help_command "b64paste <file>" "Base64 encode file and paste to https://p.cpanel.xyz (Recommended for larger files)"
+	help_command "transfer <file>" "Transfers file to transfer.sh"
+	help_command "domain_check" "Runs a curl test on all domains in /etc/userdomains and outputs the results in a table"
+	help_command "get-requires" "Runs a test to check what packages require the packages passed into the function"
+	help_command "strace-cpsrvd" "Runs a strace against cpsrvd and friends."
+	help_command "strace-phpuser" "Runs a strace against the first PHP process that spawns for user (must be in user's homedir)"
+	help_command "strace-httpd" "Runs a strace against httpd."
+}
+
+function h4tf() {
+	DATE=$(date +%F)
+	IP=$(hostname -i)
+	if [ -z "${TICKET}" ]; then
+		echo "Ticket number not detected via HISTFILE"
+	else
+		echo "Ticket number is ${TICKET}"
+		touch /usr/share/doc/.cp."${TECH}"."${DATE}"_"${IP}"_"${TICKET}"
+		stat /usr/share/doc/.cp*
+	fi
+}
+
+function esp_help_L3() {
+	help_section "L3 Only"
+	help_command "h4tf" "Create hacked server touchfile"
 }
 
 #
@@ -546,124 +1468,104 @@ function esp_help_other() {
 # ----------------------------------------------------
 
 function help_section () {
-    printf "\n\n$(tput setaf 3)$(tput bold) .: %s :. $(tput sgr0)\n" "$1";
+	printf "\\n\\n${YELLOW}${BOLD} .: %s :. ${END}\\n" "$1"
 }
 
 function help_command () {
-    printf "$(tput setaf 2)$(tput bold)%16s $(tput sgr0)%s\n" "$1" "$2";
+	printf "${GREEN}${BOLD}%16s ${END}%s\\n" "$1" "$2"
 }
 
 
 #
-# The Actual Help Section 
+# The Actual Help Section
 #
 function cphelp() {
-    esp_help_backup;
-    esp_help_sys-info;
-    esp_help_net;
-    esp_help_account;
-    esp_help_ssl;
-    esp_help_mail;
-    esp_help_mysql;
-    esp_help_PHP_Apache;
-    esp_help_bash_nav;
-    esp_migrations;
-    esp_help_virtfs;
-    esp_help_other;
+	esp_help_edchecks
+	esp_help_tweaksettings
+	esp_help_backup
+	esp_help_sys-info
+	esp_help_net
+	esp_help_account
+	esp_help_ssl
+	esp_help_AutoSSL
+	esp_help_mail
+	esp_help_mysql
+	esp_help_PHP_Apache
+	esp_help_EA4_PHP
+	esp_help_bash_nav
+	esp_migrations
+	esp_help_virtfs
+	esp_help_other
+	esp_help_L3
 }
 #
-# Setup some envs for the PS1 prompt  
+# Setup some envs for the PS1 prompt
 # ----------------------------------
+export HOSTNAME
+export PS1_IP
+export IP_ADDR
+HOSTNAME=$(hostname -f)
+PS1_IP=$(lsip-real)
+IP_ADDR=$(lsip-real)
 
-export HOSTNAME=`hostname -f`;
-export PS1_IP=`lsip-real`;
-
-
-
-# 
+#
 # Set the functions active in the Prompt
 # --------------------------------------
 
-export IP_ADDR=`lsip-real`;
-
+# shellcheck disable=SC2205
 function PS1_Alerts() {
-    (echo -ne `check_yum``check_mailserver``check_easyapache``check_upcp``check_backups``check_apache``new_connected``check_exim``check_mysql` ) &
-    local esp_echo_pid=$!;
-    local esp_adtempts=100;
-    local esp_alert_check_no=0;
-    while [ $( local pid_check=`\ps --no-headers -p $esp_echo_pid -o pid`; if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;) -eq  1 ];
-    do
-         sleep 0.05;
-         if [ "$esp_alert_check_no" -gt "$esp_adtempts" ];
-         then
-             kill $! > /dev/null;
-             echo "$(tput setaf 1)$(tput bold)ESP CRITICAL ERROR!";
-             cat <<EOF
-██████╗  █████╗ ███╗   ██╗ ██████╗ ███████╗██████╗ 
-██╔══██╗██╔══██╗████╗  ██║██╔════╝ ██╔════╝██╔══██╗
-██║  ██║███████║██╔██╗ ██║██║  ███╗█████╗  ██████╔╝
-██║  ██║██╔══██║██║╚██╗██║██║   ██║██╔══╝  ██╔══██╗
-██████╔╝██║  ██║██║ ╚████║╚██████╔╝███████╗██║  ██║
-╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
-                                                   
-        ███████╗ ██████╗ ███╗   ██╗███████╗        
-        ╚══███╔╝██╔═══██╗████╗  ██║██╔════╝        
-          ███╔╝ ██║   ██║██╔██╗ ██║█████╗          
-         ███╔╝  ██║   ██║██║╚██╗██║██╔══╝          
-        ███████╗╚██████╔╝██║ ╚████║███████╗        
-        ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝        
-EOF
-echo -ne "$(tput sgr0)$(tput setaf 3)";
-cat <<EOF
-It apears that the ESP alert checks hung, resulting
-in an safty timeout to kill the ESP alert checks to
-prevent ESP from haning the entire shell.
-
-This issue is often caused when an server is under
-a ddos attack causing the apache check to hang when
-downloading the server status.  Please disable the 
-apache check with the following command:
-
-EOF
-echo "$(tput setaf 5)    # export esp_check_disable_apache=1$(tput setaf 3)";
-cat <<EOF
-
-If you contune to see this DANGER ZONE message after
-disabling the apache check it is recomended to
-disable all ESP Alert checks with this command:
-
-EOF
-echo "$(tput setaf 5)    # export esp_check_disable_all=1$(tput setaf 6)";
-cat <<EOF
-
-Please report this issue to citizen.
-
-Thank you and good luck!
-EOF
-         else
-              esp_alert_check_no=$(( $esp_alert_check_no + 1));
-         fi;
-   done; 
+	(echo -ne "$(check_yum)$(check_cpsrvd)$(check_tailwatchd)$(check_chkservd)$(check_mailserver)$(check_easyapache)$(check_upcp)$(check_backups)$(check_apache)$(new_connected)$(check_exim)$(check_mysql)" ) &
+	local esp_echo_pid=$!
+	local esp_adtempts=100
+	local esp_alert_check_no=0
+	local pid_check
+	while [ "$( pid_check=$(ps --no-headers -p $esp_echo_pid -o pid); if [ -z "$pid_check" ]; then echo "0"; else echo "1"; fi;)" -eq  1 ]
+	do
+		sleep 0.05
+		if [ "$esp_alert_check_no" -gt "$esp_adtempts" ]
+		then
+			kill $! > /dev/null
+			echo "${RED}${BOLD}ESP CRITICAL ERROR!"
+			echo -ne "${END}${YELLOW}"
+			printf "It appears that the ESP alert checks hung, resultingi\\nin an safety timeout to kill the ESP alert checks to\\nprevent ESP from haning the entire shell.\\n\\nThis issue is often caused when an server is underi\\na DDoS attack causing the Apache check to hang when\\ndownloading the server status.  Please disable the\\nApache check with the following command:"
+			echo "${MAGENTA}    # dc-apache${YELLOW}"
+			printf "If you continue to see this DANGER ZONE message after\\ndisabling the Apache check it is recommended to\\ndisable all ESP Alert checks with this command:"
+			echo "${MAGENTA}    # dc-all${CYAN}"
+			echo "Please report this issue to Terrance."
+		else
+			esp_alert_check_no=$(( esp_alert_check_no + 1))
+		fi
+	done
 }
 
-export PS1="\n$(tput setaf 7)[$(tput setaf 3)\H$(tput setaf 7)|$(tput setaf 3)$IP_ADDR$(tput setaf 7)] $(tput setaf 6)Alerts: \`PS1_Alerts\`\n$(tput setaf 7)[$(tput setaf 3)$TICKET$(tput setaf 7)]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\` [\`if [[ `pwd|wc -c|tr -d " "` > 18 ]]; then echo "\\w"; else echo "\\w"; fi\`]\$\[\033[0m\] "; echo -ne "\033]0;`hostname -s`:`pwd`\007";
+PROMPT1="\\[\\033[31m\\]"
+PROMPT2="\\[\\033[32m\\]"
+PROMPT3="\\[\\033[0m\\]"
+TPROMPT="\\033]0;"
+TENDPROMPT="\\007"
 
-save_connected;
-
-if [ "$ssp" == "1" ]; then
-    \curl -s --insecure https://ssp.cpanel.net/SSP/run | sh;
+# shellcheck disable=SC2181
+if [ -z "${NOPS1}" ]; then
+	PS1="\\n\\[${WHITE}\\][\\[${YELLOW}\\]\\H\\[${WHITE}\\]|\\[${YELLOW}\\]${IP_ADDR}\\[${WHITE}\\]] \\[${CYAN}\\]Alerts: \`PS1_Alerts\`\\n\\[${WHITE}\\][\\[${YELLOW}\\]\\D{%T}\\[${WHITE}\\]]\\[${END}\\] \\[${WHITE}\\][\\[${YELLOW}\\]${TICKET}\\[${WHITE}\\]]\\[${END}\\]$(if [[ $? = "0"  ]]; then echo "${PROMPT2}"; else echo "${PROMPT1}"; fi;) [$(if (( $(pwd|wc -c|tr -d " ") > 18  )); then echo "\\w"; else echo "\\w"; fi;)]\$${PROMPT3} "
+	export PS1
 fi
+echo -ne "${TPROMPT}cPTKT ${TICKET} - ESP${TENDPROMPT}"
 
+save_connected
+
+# if [ "$ssp" == "1" ]; then
+#	ssp
+# fi
 
 #
 # ESP hook for Post Startup
 # -------------------------
 
 if [ "$(declare -Ff esp_hook_post)" == "esp_hook_post" ]; then
-    esp_hook_post;
-fi;
+	esp_hook_post
+fi
 
-echo;echo "$(tput setaf 3)$(tput bold)Use cphelp for a listing of the extra commands available.";
-echo;echo "NOTICE:  If ESP is failing on some servers, update the url from raw.github.com to raw.githubusercontent.com";
-echo;echo '     source /dev/stdin <<< "$(curl -sL https://raw.githubusercontent.com/cPanelTechs/ESP/master/esp)"';
-echo "$(tput sgr0)";
+echo;echo "${YELLOW}${BOLD}ESP version${END} ${WHITE}${BOLD}${VERSION}${END} ${YELLOW}${BOLD}loaded.${END}";
+echo;echo "${YELLOW}${BOLD}Use cphelp for a listing of the extra commands available.";
+echo;echo "Hello ${TECH}! Successfully logged into ${TICKET}";
+echo "${END}"
