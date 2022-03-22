@@ -332,7 +332,7 @@ esp_help_sys-info(){
 # -------------------
 
 alias lsip='ifconfig | grep "inet addr"| grep -v "127.0.0.1"';
-alias lsip-real="curl -s http://cpanel.com/showip.cgi";
+alias lsip-real="curl -s https://myip.cpanel.net/v2";
 alias lsip-mainip="strings /var/cpanel/mainip";
 alias ips=$(ifconfig | awk '/inet/ {if ($2!~/127.0|:$/) print $2}' | awk -F: '{print "echo "$2}');
 
