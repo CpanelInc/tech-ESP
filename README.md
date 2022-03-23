@@ -1,6 +1,10 @@
 ESP - Enhanced Shell Prompt
 ===========================
 
+
+## This project is no longer updated (archived)
+
+
 Intro 
 ----
 
